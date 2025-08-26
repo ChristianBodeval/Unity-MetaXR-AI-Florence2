@@ -1,17 +1,21 @@
+using Meta.XR;
+using Meta.XR.BuildingBlocks;
+using Meta.XR.BuildingBlocks;
+using NaughtyAttributes;
+using Newtonsoft.Json;
+using PassthroughCameraSamples;
+using PresentFutures.XRAI.Spatial;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
+using System.Net.Http;
 using System.Text;
-using NaughtyAttributes;
+using System.Threading.Tasks;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
-using Newtonsoft.Json;
-using System.Net.Http;
-using System.Threading.Tasks;
-using Meta.XR;
-using PassthroughCameraSamples;
 
 namespace PresentFutures.XRAI.Florence
 {
@@ -148,7 +152,7 @@ namespace PresentFutures.XRAI.Florence
         public enum FlorenceAnchorMode { BoundingBox2D, SpatialLabel3D, Both }
 
         [Header("Anchor Mode")]
-        [Tooltip("Choose how to visualize detections: 2D bounding boxes or 3D spatial anchors")] 
+        [Tooltip("Choose how to visualize detections: 2D bounding boxes or 3D spatial anchors")]
         public FlorenceAnchorMode anchorMode = FlorenceAnchorMode.BoundingBox2D;
 
         [Header("Spatial Placement")]
@@ -156,7 +160,11 @@ namespace PresentFutures.XRAI.Florence
         public GameObject spatialAnchorPrefab;
         [Tooltip("Reference to the EnvironmentRaycastManager in the scene")]
         public EnvironmentRaycastManager environmentRaycastManager;
-        
+
+        // References to the Building Blocks
+        public SpatialAnchorSpawnerBuildingBlock spatialAnchorSpawnerBuildingBlock;
+        public SpatialAnchorCoreBuildingBlock spatialAnchorCoreBuildingBlock; // ADD THIS
+
         // To store parsed detection results for runtime UI overlay
         private List<DetectionResult> _detectionResults = new List<DetectionResult>();
         private readonly List<GameObject> _spawnedBoxes = new List<GameObject>();
@@ -181,20 +189,90 @@ namespace PresentFutures.XRAI.Florence
             { Florence2Task.OCR, "<OCR>" },
             { Florence2Task.OCRWithRegion, "<OCR_WITH_REGION>" }
         };
-        
+
+        // Add this to your Awake method to subscribe to the event
+        private void Awake()
+        {
+            if (spatialAnchorCoreBuildingBlock != null)
+            {
+                spatialAnchorCoreBuildingBlock.OnAnchorCreateCompleted.AddListener(OnAnchorCreated);
+            }
+            else
+            {
+                Debug.LogError("SpatialAnchorCoreBuildingBlock reference is missing! Cannot subscribe to events.");
+            }
+        }
+
+        public Pose currentCameraPosition;
+
+        Texture2D myCapturedTexture = null;
+        PassthroughCameraOffline.SavedSnapshot mysnap;
+
+        // >>> NEW: Multi-request support ---------------------------------------------------
+        [Header("Multi-request Mode")]
+        [Tooltip("If true, each SendRequest() captures a snapshot and sends a separate request while previous ones are still pending.")]
+        public bool multiRequestMode = true;
+
+        // Per-request data
+        private class PendingRequest
+        {
+            public string RequestId;
+            public Pose CameraPose;
+            public PassthroughCameraOffline.SavedSnapshot Snap;
+            public Texture2D CapturedTexture;     // the exact frame sent to Florence
+            public List<DetectionResult> Results = new List<DetectionResult>();
+            public GameObject cameraViewPyramid;
+        }
+
+        // All pending requests by id
+        private readonly Dictionary<string, PendingRequest> _pending = new Dictionary<string, PendingRequest>();
+        // >>> END NEW ---------------------------------------------------------------------
+
+        public GameObject cameraViewPyramidPrefab;
+
         [Button]
         public void SendRequest()
         {
             if (resultText != null) resultText.text = "";
             if (statusText != null) statusText.text = "Processing...";
             if (loadingIcon != null) loadingIcon.SetActive(true);
-            
+
             _detectionResults.Clear();
             _overlayTexture = null;
+
+            currentCameraPosition = PassthroughCameraUtils.GetCameraPoseInWorld(PassthroughCameraEye.Left);
+            mysnap = PassthroughCameraOffline.CaptureSnapshot(PassthroughCameraEye.Left, savedFrame: myCapturedTexture);
+
             
+
+            // >>> NEW: multi-request branch
+            if (multiRequestMode)
+            {
+                // Capture the exact frame currently shown in sourceTexture as a Texture2D
+                var capturedTex = ConvertToTexture2D(sourceTexture.texture);
+                var snap = PassthroughCameraOffline.CaptureSnapshot(PassthroughCameraEye.Left, savedFrame: capturedTex);
+                var reqId = Guid.NewGuid().ToString("N");
+                Debug.Log("Spawning");
+                var cameraViewPyramidInstance = Instantiate(cameraViewPyramidPrefab, snap.CameraPoseWorld.position, snap.CameraPoseWorld.rotation);
+
+
+                _pending[reqId] = new PendingRequest
+                {
+                    RequestId = reqId,
+                    CameraPose = new Pose(snap.CameraPoseWorld.position, snap.CameraPoseWorld.rotation),
+                    Snap = snap,
+                    CapturedTexture = capturedTex,
+                    cameraViewPyramid = cameraViewPyramidInstance
+                };
+
+                StartCoroutine(SendApiRequest_Multi(reqId, capturedTex));
+                return; // keep original single-request code intact (not deleted), but skip it when multi is enabled
+            }
+            // >>> END NEW
+
             StartCoroutine(SendApiRequest());
-        } 
-        
+        }
+
         // It prepares the data and then calls our new async method.
         private IEnumerator SendApiRequest()
         {
@@ -214,7 +292,7 @@ namespace PresentFutures.XRAI.Florence
             {
                 finalPrompt += textPrompt;
             }
-            
+
             string content = $"{finalPrompt}<img src=\"data:image/jpeg;base64,{imageBase64}\" />";
 
             var payload = new
@@ -225,7 +303,7 @@ namespace PresentFutures.XRAI.Florence
             string jsonPayload = JsonConvert.SerializeObject(payload);
 
             statusText.text = "Sending request...";
-            
+
             // Start the async network request and get a "Task" handle for it.
             Task<byte[]> sendTask = SendRequestWithHttpClientAsync(jsonPayload);
 
@@ -264,113 +342,236 @@ namespace PresentFutures.XRAI.Florence
             }
         }
 
-    // Standard .NET HttpClient for full control over the request.
-    private async Task<byte[]> SendRequestWithHttpClientAsync(string jsonPayload)
-    {
-        // Use 'using' to ensure the client is disposed of correctly
-        using (var client = new HttpClient())
+        // >>> NEW: multi-request version (keeps original intact)
+        private IEnumerator SendApiRequest_Multi(string requestId, Texture2D capturedTexture)
         {
-            // Create the request message
-            var requestMessage = new HttpRequestMessage(HttpMethod.Post, ApiUrl);
-            
-            // Add headers with full control. No extra headers will be added.
-            requestMessage.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", apiConfiguration.apiKey);
-            requestMessage.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/zip"));
-
-            // Add the JSON payload to the request body
-            requestMessage.Content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
-
-            // Send the request asynchronously and wait for the response
-            var response = await client.SendAsync(requestMessage);
-
-            if (response.IsSuccessStatusCode)
+            if (string.IsNullOrEmpty(apiConfiguration.apiKey) || capturedTexture == null)
             {
-                // If successful, read the response content as a byte array
-                return await response.Content.ReadAsByteArrayAsync();
+                statusText.text = "Error: API Key or Source Image is missing!";
+                yield break;
+            }
+
+            byte[] imageBytes = capturedTexture.EncodeToJPG(75);
+            string imageBase64 = Convert.ToBase64String(imageBytes);
+            string taskPromptString = _taskPrompts[task];
+            string finalPrompt = taskPromptString;
+
+            if (task == Florence2Task.CaptionToPhraseGrounding || task == Florence2Task.ReferringExpressionSegmentation || task == Florence2Task.OpenVocabularyDetection)
+            {
+                finalPrompt += textPrompt;
+            }
+
+            string content = $"{finalPrompt}<img src=\"data:image/jpeg;base64,{imageBase64}\" />";
+
+            var payload = new
+            {
+                messages = new[] { new { role = "user", content } },
+                max_tokens = 1024
+            };
+            string jsonPayload = JsonConvert.SerializeObject(payload);
+
+            if (statusText != null) statusText.text = $"Sending request ({requestId[..6]})...";
+
+            Task<byte[]> sendTask = SendRequestWithHttpClientAsync(jsonPayload);
+
+            while (!sendTask.IsCompleted)
+            {
+                yield return null;
+            }
+
+            if (sendTask.IsFaulted)
+            {
+                Debug.LogError($"[{requestId}] web request failed: {sendTask.Exception}");
+                if (statusText != null) statusText.text = $"Error: Request failed ({requestId[..6]}).";
             }
             else
             {
-                // If not successful, read the error message and log it
-                string errorContent = await response.Content.ReadAsStringAsync();
-                Debug.LogError($"Error: {response.StatusCode}\nResponse: {errorContent}");
-                // Return null to indicate failure
-                return null;
+                byte[] zipData = sendTask.Result;
+                if (zipData != null && zipData.Length > 0)
+                {
+                    if (statusText != null) statusText.text = $"Success! Processing ({requestId[..6]})...";
+                    ProcessZipResponse_ForRequest(zipData, requestId);
+                }
+                else
+                {
+                    Debug.LogError($"[{requestId}] Request returned empty/null data.");
+                    if (statusText != null) statusText.text = $"Error: Empty response ({requestId[..6]}).";
+                }
             }
         }
-    }
-        
-    private void ProcessZipResponse(byte[] zipData)
-    {
-        try
+        // >>> END NEW
+
+        // Standard .NET HttpClient for full control over the request.
+        private async Task<byte[]> SendRequestWithHttpClientAsync(string jsonPayload)
         {
-            // Log to confirm the method is called
-            Debug.Log($"<color=orange>ProcessZipResponse called with {zipData.Length} bytes of data.</color>");
-
-            using (var memoryStream = new MemoryStream(zipData))
-            using (var archive = new ZipArchive(memoryStream, ZipArchiveMode.Read))
+            // Use 'using' to ensure the client is disposed of correctly
+            using (var client = new HttpClient())
             {
-                // Log to check the number of files
-                Debug.Log($"<color=yellow>Archive contains {archive.Entries.Count} file(s).</color>");
+                // Create the request message
+                var requestMessage = new HttpRequestMessage(HttpMethod.Post, ApiUrl);
 
-                foreach (ZipArchiveEntry entry in archive.Entries)
+                // Add headers with full control. No extra headers will be added.
+                requestMessage.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", apiConfiguration.apiKey);
+                requestMessage.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/zip"));
+
+                // Add the JSON payload to the request body
+                requestMessage.Content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
+
+                // Send the request asynchronously and wait for the response
+                var response = await client.SendAsync(requestMessage);
+
+                if (response.IsSuccessStatusCode)
                 {
-                    // Log the exact name of every file in the ZIP
-                    Debug.Log($"<color=cyan>Found file in zip with full name: '{entry.FullName}'</color>");
-                    
-                    if (entry.FullName.EndsWith(".response"))
+                    // If successful, read the response content as a byte array
+                    return await response.Content.ReadAsByteArrayAsync();
+                }
+                else
+                {
+                    // If not successful, read the error message and log it
+                    string errorContent = await response.Content.ReadAsStringAsync();
+                    Debug.LogError($"Error: {response.StatusCode}\nResponse: {errorContent}");
+                    // Return null to indicate failure
+                    return null;
+                }
+            }
+        }
+
+        private void ProcessZipResponse(byte[] zipData)
+        {
+            try
+            {
+                // Log to confirm the method is called
+                Debug.Log($"<color=orange>ProcessZipResponse called with {zipData.Length} bytes of data.</color>");
+
+                using (var memoryStream = new MemoryStream(zipData))
+                using (var archive = new ZipArchive(memoryStream, ZipArchiveMode.Read))
+                {
+                    // Log to check the number of files
+                    Debug.Log($"<color=yellow>Archive contains {archive.Entries.Count} file(s).</color>");
+
+                    foreach (ZipArchiveEntry entry in archive.Entries)
                     {
-                        Debug.Log($"<color=green>Found a .response file! Processing as JSON...</color>");
+                        // Log the exact name of every file in the ZIP
+                        Debug.Log($"<color=cyan>Found file in zip with full name: '{entry.FullName}'</color>");
 
-                        using (var reader = new StreamReader(entry.Open()))
+                        if (entry.FullName.EndsWith(".response"))
                         {
-                            string jsonContent = reader.ReadToEnd();
-                            Debug.Log($"<color=cyan>--- RECEIVED JSON ---</color>\n{jsonContent}");
+                            Debug.Log($"<color=green>Found a .response file! Processing as JSON...</color>");
 
-                            Florence2Response response = JsonConvert.DeserializeObject<Florence2Response>(jsonContent);
-
-                            if (response == null)
+                            using (var reader = new StreamReader(entry.Open()))
                             {
-                                Debug.LogError("JSON Deserialization failed. The response object is null.");
-                                if (statusText != null) statusText.text = "Error: Failed to parse JSON.";
-                                return;
-                            }
+                                string jsonContent = reader.ReadToEnd();
+                                Debug.Log($"<color=cyan>--- RECEIVED JSON ---</color>\n{jsonContent}");
 
-                            if (resultText != null)
-                            {
-                                resultText.text = $"ID: {response.Id}\n";
-                                if (response.Choices != null && response.Choices.Count > 0 && response.Choices[0]?.Message?.Entities?.Labels != null)
-                                    resultText.text += $"Found {response.Choices[0].Message.Entities.Labels.Count} objects.\n";
+                                Florence2Response response = JsonConvert.DeserializeObject<Florence2Response>(jsonContent);
+
+                                if (response == null)
+                                {
+                                    Debug.LogError("JSON Deserialization failed. The response object is null.");
+                                    if (statusText != null) statusText.text = "Error: Failed to parse JSON.";
+                                    return;
+                                }
+
+                                if (resultText != null)
+                                {
+                                    resultText.text = $"ID: {response.Id}\n";
+                                    if (response.Choices != null && response.Choices.Count > 0 && response.Choices[0]?.Message?.Entities?.Labels != null)
+                                        resultText.text += $"Found {response.Choices[0].Message.Entities.Labels.Count} objects.\n";
+                                    else
+                                        resultText.text += "No objects found in response.\n";
+                                    resultText.text += $"Usage: {response.Usage.TotalTokens} tokens.";
+                                }
+
+                                if (response.Choices != null && response.Choices.Count > 0 && response.Choices[0]?.Message?.Entities != null)
+                                    DisplayObjectDetectionResults(response.Choices[0].Message.Entities);
                                 else
-                                    resultText.text += "No objects found in response.\n";
-                                resultText.text += $"Usage: {response.Usage.TotalTokens} tokens.";
+                                    Debug.LogWarning("The 'entities' object is missing from the JSON response. No bounding boxes to display.");
                             }
-
-                            if (response.Choices != null && response.Choices.Count > 0 && response.Choices[0]?.Message?.Entities != null)
-                                DisplayObjectDetectionResults(response.Choices[0].Message.Entities);
-                            else
-                                Debug.LogWarning("The 'entities' object is missing from the JSON response. No bounding boxes to display.");
+                        }
+                        else if (entry.FullName.EndsWith(".png"))
+                        {
+                            // Optional: You could also handle the overlay.png here if you wanted.
+                            Debug.Log("Found overlay.png, skipping for now.");
                         }
                     }
-                    else if (entry.FullName.EndsWith(".png"))
+                }
+                if (statusText != null) statusText.text = "Done!";
+            }
+            catch (Exception e)
+            {
+                if (statusText != null) statusText.text = "Error: Failed to read response.";
+                Debug.LogError($"Failed to process ZIP response: {e.Message}\n{e.StackTrace}");
+            }
+        }
+
+        // >>> NEW: per-request processing (does not touch original)
+        private void ProcessZipResponse_ForRequest(byte[] zipData, string requestId)
+        {
+            if (!_pending.TryGetValue(requestId, out var req))
+            {
+                Debug.LogWarning($"[{requestId}] Pending request not found.");
+                return;
+            }
+
+            try
+            {
+                using (var memoryStream = new MemoryStream(zipData))
+                using (var archive = new ZipArchive(memoryStream, ZipArchiveMode.Read))
+                {
+                    foreach (ZipArchiveEntry entry in archive.Entries)
                     {
-                        // Optional: You could also handle the overlay.png here if you wanted.
-                        Debug.Log("Found overlay.png, skipping for now.");
+                        if (entry.FullName.EndsWith(".response"))
+                        {
+                            using (var reader = new StreamReader(entry.Open()))
+                            {
+                                string jsonContent = reader.ReadToEnd();
+                                Florence2Response response = JsonConvert.DeserializeObject<Florence2Response>(jsonContent);
+                                if (response == null)
+                                {
+                                    Debug.LogError($"[{requestId}] JSON parse failed.");
+                                    continue;
+                                }
+
+                                if (response.Choices != null && response.Choices.Count > 0 && response.Choices[0]?.Message?.Entities != null)
+                                {
+                                    // Fill req.Results (keep your global list intact)
+                                    var entities = response.Choices[0].Message.Entities;
+                                    req.Results.Clear();
+
+                                    for (int i = 0; i < entities.Bboxes.Count; i++)
+                                    {
+                                        var bbox = entities.Bboxes[i];
+                                        float x = bbox[0];
+                                        float y = bbox[1];
+                                        float width = bbox[2] - x;
+                                        float height = bbox[3] - y;
+
+                                        req.Results.Add(new DetectionResult
+                                        {
+                                            BoundingBox = new Rect(x, y, width, height),
+                                            Label = entities.Labels[i]
+                                        });
+                                    }
+
+                                    // Draw/Spawn using the request's own snapshot
+                                    StartCoroutine(SpawnDetectionVisuals_ForRequest(req));
+                                }
+                            }
+                        }
                     }
                 }
             }
-            if (statusText != null) statusText.text = "Done!";
+            catch (Exception e)
+            {
+                Debug.LogError($"[{requestId}] Failed to process ZIP response: {e.Message}\n{e.StackTrace}");
+            }
         }
-        catch (Exception e)
-        {
-            if (statusText != null) statusText.text = "Error: Failed to read response.";
-            Debug.LogError($"Failed to process ZIP response: {e.Message}\n{e.StackTrace}");
-        }
-    }
+        // >>> END NEW
 
         private void DisplayObjectDetectionResults(Entities entities)
         {
             _detectionResults.Clear();
-            
+
             Debug.Log($"<color=green>Found {entities.Bboxes.Count} detections. Processing for display...</color>");
 
             for (int i = 0; i < entities.Bboxes.Count; i++)
@@ -381,21 +582,21 @@ namespace PresentFutures.XRAI.Florence
                 // Florence-2 bounding box format is [x1, y1, x2, y2] (top-left & bottom-right)
                 float width = bbox[2] - x;
                 float height = bbox[3] - y;
-                
+
                 // Add detection result for UI usage
                 _detectionResults.Add(new DetectionResult
                 {
                     BoundingBox = new Rect(x, y, width, height),
                     Label = entities.Labels[i]
                 });
-                
+
                 Debug.Log($"  - Detected '{entities.Labels[i]}' at box: [x:{x}, y:{y}, w:{width}, h:{height}]");
             }
 
             // After collecting all detections, create visuals
-            StartCoroutine( SpawnDetectionVisuals());
+            StartCoroutine(SpawnDetectionVisuals());
         }
-        
+
         private void DecodeAndDisplayOverlay(string base64Data)
         {
             if (string.IsNullOrEmpty(base64Data)) return;
@@ -405,10 +606,10 @@ namespace PresentFutures.XRAI.Florence
 
             _overlayTexture = new Texture2D(2, 2);
             _overlayTexture.LoadImage(imageBytes);
-            
+
             resultImage.texture = _overlayTexture;
         }
-        
+
         public static Texture2D ConvertToTexture2D(Texture texture)
         {
             if (texture == null)
@@ -459,8 +660,9 @@ namespace PresentFutures.XRAI.Florence
                 if (go) Destroy(go);
             }
             _spawnedBoxes.Clear();
-            ClearAnchors();
+            //ClearAnchors();
         }
+
 
         private IEnumerator SpawnDetectionVisuals()
         {
@@ -487,7 +689,7 @@ namespace PresentFutures.XRAI.Florence
                 float y = det.BoundingBox.y * scaleY;
                 float w = det.BoundingBox.width * scaleX;
                 float h = det.BoundingBox.height * scaleY;
-                
+
                 if (anchorMode == FlorenceAnchorMode.BoundingBox2D || anchorMode == FlorenceAnchorMode.Both)
                 {
                     GameObject boxGO = Instantiate(boundingBoxPrefab, boundingBoxContainer);
@@ -503,26 +705,77 @@ namespace PresentFutures.XRAI.Florence
                     // find label child
                     var txt = boxGO.GetComponentInChildren<TMPro.TextMeshProUGUI>();
                     if (txt) txt.text = det.Label;
-                    
+
+
+                    Debug.Log("spatialAnchorPrefab: " + spatialAnchorPrefab + " " + "det.Label: " + det.Label + " " + "boxGO: " + boxGO);
+                    SpatialAnchorManager.Instance.CreateSpatialAnchor(spatialAnchorPrefab, boxGO.transform.position, Quaternion.identity, det.Label);
+
+
                     _spawnedBoxes.Add(boxGO);
                 }
                 if ((anchorMode == FlorenceAnchorMode.SpatialLabel3D || anchorMode == FlorenceAnchorMode.Both) && spatialAnchorPrefab != null && environmentRaycastManager != null)
                 {
+
+                    /*
+                    var rayInCamera = ScreenPointToRayInCamera(cameraEye, screenPoint);
+                    
+                    var rayDirectionInWorld = cameraPoseInWorld.rotation * rayInCamera.direction;
+                    Ray myRay = new Ray(cameraPoseInWorld.position, rayInCamera.direction);
+                    */
+
+
+                    /*
                     int centerX = Mathf.RoundToInt(x + w * 0.5f);
                     int centerY = Mathf.RoundToInt(y + h * 0.5f);
                     int invertedCenterY = resultImage.texture.height - centerY;
                     var cameraScreenPoint = new Vector2Int(centerX, invertedCenterY);
-                    
+
                     var ray = PassthroughCameraUtils.ScreenPointToRayInWorld(PassthroughCameraEye.Left, cameraScreenPoint);
+                    */
+                    float u = (x + 0.5f * w) / resultImage.texture.width;
+                    float vBL = (y + 0.5f * h) / resultImage.texture.height;
+
+                    // convert to top-left origin expected by intrinsics (invert Y)
+                    float v = 1f - vBL;
+
+                    // world-space ray using saved snapshot
+                    var ray = PassthroughCameraOffline.NormalizedToRayInWorld(mysnap, new Vector2(u, v));
 
                     if (environmentRaycastManager.Raycast(ray, out EnvironmentRaycastHit hitInfo))
                     {
+                        // Spawn the spatial anchor using the spawner
+                        // Instantiate a temporary visual until the anchor is ready.
+                        // We will replace this with the actual anchor's GameObject later.
+
+
+
+
+                        //SpatialAnchorManager.Instance.CreateSpatialAnchor(spatialAnchorPrefab, hitInfo.point, Quaternion.LookRotation(Camera.main.transform.position-hitInfo.point, Vector3.up), det.Label);
+
+
+                        //anchorGameObject.GetComponent<SpacialLabel>().name = name;
+                        /*
                         GameObject anchorGo = Instantiate(spatialAnchorPrefab);
                         anchorGo.transform.SetPositionAndRotation(
                             hitInfo.point,
                             Quaternion.LookRotation(hitInfo.normal, Vector3.up));
                         _spawnedAnchors.Add(anchorGo);
-                        anchorGo.GetComponentInChildren<TMPro.TextMeshProUGUI>().text = det.Label;
+                        anchorGo.GetComponentInChildren<TMPro.TextMeshProUGUI>().text = det.Label; */
+
+
+
+
+                        var lookRot = Quaternion.LookRotation(Camera.main.transform.position - hitInfo.point, Vector3.up);
+                        var anchor = SpatialAnchorManager.Instance.CreateSpatialAnchor(
+                            spatialAnchorPrefab,
+                            hitInfo.point,
+                            lookRot,
+                            det.Label,
+                            hitInfo.normal,          // <-- important for dedup
+                            null                     // optional label root; pass if you want UI updates here
+                        );
+
+
                     }
                 }
 
@@ -530,6 +783,115 @@ namespace PresentFutures.XRAI.Florence
             }
         }
         #endregion
+
+        // >>> NEW: per-request visual spawn that uses the request's own snapshot and captured texture
+        private IEnumerator SpawnDetectionVisuals_ForRequest(PendingRequest req)
+        {
+            if (boundingBoxContainer == null)
+            {
+                Debug.LogWarning("No boundingBoxContainer assigned – skipping UI boxes for request " + req.RequestId);
+                yield break;
+            }
+
+            // NOTE: We DO NOT ClearBoundingBoxes() here so multiple requests can overlay results.
+
+            // Use the dimensions of the actual captured texture for proper scaling/UV mapping
+            float texW = req.CapturedTexture.width;
+            float texH = req.CapturedTexture.height;
+
+            RectTransform imgRect = resultImage.rectTransform;
+            float scaleX = imgRect.rect.width / texW;
+            float scaleY = imgRect.rect.height / texH;
+
+            foreach (var det in req.Results)
+            {
+                if (boundingBoxPrefab == null)
+                {
+                    Debug.LogError("boundingBoxPrefab not assigned");
+                    yield break;
+                }
+
+                float x = det.BoundingBox.x * scaleX;
+                float y = det.BoundingBox.y * scaleY;
+                float w = det.BoundingBox.width * scaleX;
+                float h = det.BoundingBox.height * scaleY;
+
+                if (anchorMode == FlorenceAnchorMode.BoundingBox2D || anchorMode == FlorenceAnchorMode.Both)
+                {
+                    GameObject boxGO = Instantiate(boundingBoxPrefab, boundingBoxContainer);
+                    boxGO.name = "BBox_" + det.Label + "_" + req.RequestId.Substring(0, 6);
+
+                    var rt = boxGO.GetComponent<RectTransform>();
+                    rt.anchorMin = new Vector2(0, 1);
+                    rt.anchorMax = new Vector2(0, 1);
+                    rt.pivot = new Vector2(0, 1);
+                    rt.anchoredPosition = new Vector2(x, -y);
+                    rt.sizeDelta = new Vector2(w, h);
+
+                    var txt = boxGO.GetComponentInChildren<TMPro.TextMeshProUGUI>();
+                    if (txt) txt.text = det.Label;
+
+                    _spawnedBoxes.Add(boxGO);
+                }
+
+                if ((anchorMode == FlorenceAnchorMode.SpatialLabel3D || anchorMode == FlorenceAnchorMode.Both) && spatialAnchorPrefab != null && environmentRaycastManager != null)
+                {
+                    // Compute normalized UVs using the captured tex dimensions
+                    float u = (det.BoundingBox.x + 0.5f * det.BoundingBox.width) / texW;
+                    float vBL = (det.BoundingBox.y + 0.5f * det.BoundingBox.height) / texH;
+                    float v = 1f - vBL;
+
+                    var ray = PassthroughCameraOffline.NormalizedToRayInWorld(req.Snap, new Vector2(u, v));
+
+                    if (environmentRaycastManager.Raycast(ray, out EnvironmentRaycastHit hitInfo))
+                    {
+                        var lookRot = Quaternion.LookRotation(Camera.main.transform.position - hitInfo.point, Vector3.up);
+                        SpatialAnchorManager.Instance.CreateSpatialAnchor(
+                            spatialAnchorPrefab,
+                            hitInfo.point,
+                            lookRot,
+                            det.Label,
+                            hitInfo.normal,
+                            null
+                        );
+                    }
+                }
+
+                yield return null;
+            }
+
+            // Request completed; you can remove it from the dictionary to avoid growth
+            Destroy(req.cameraViewPyramid);
+            _pending.Remove(req.RequestId);
+        }
+        // >>> END NEW
+
+        // This method will be called when an anchor is successfully created.
+        private void OnAnchorCreated(OVRSpatialAnchor anchor, OVRSpatialAnchor.OperationResult result)
+        {
+            if (result == OVRSpatialAnchor.OperationResult.Success)
+            {
+                Debug.Log($"Successfully created spatial anchor with UUID: {anchor.Uuid}");
+                // You can now access and manipulate the created 'anchor' object directly.
+                // For example, you might want to attach a component to it or store it in a list.
+                // It's also a good place to swap out a temporary visual with the permanent one.
+
+
+            }
+            else
+            {
+                Debug.LogError($"Failed to create spatial anchor. Result: {result}");
+            }
+        }
+
+        private void OnDestroy()
+        {
+            // Unsubscribe from the event to prevent memory leaks
+            if (spatialAnchorCoreBuildingBlock != null)
+            {
+                spatialAnchorCoreBuildingBlock.OnAnchorCreateCompleted.RemoveListener(OnAnchorCreated);
+            }
+        }
 
         //Clear all created anchors
         private void ClearAnchors()

@@ -1,9 +1,11 @@
 using System;
 using UnityEngine;
 
+
+[ExecuteInEditMode]
 public class FaceCamera : MonoBehaviour
 {
-    private Transform cameraTransform;
+    public Transform cameraTransform;
     [SerializeField] private bool reverse = true;
     [SerializeField] private bool projectedOnY = false;
 
