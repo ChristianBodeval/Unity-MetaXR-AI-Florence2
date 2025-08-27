@@ -6,6 +6,7 @@ using UnityEngine;
 using TMPro;
 using PresentFutures.XRAI.Spatial;
 
+
 public class SpatialAnchorManager : MonoBehaviour
 {
     public static SpatialAnchorManager Instance { get; private set; }
@@ -61,20 +62,14 @@ public class SpatialAnchorManager : MonoBehaviour
 
     void Update()
     {
+        /*
         if (OVRInput.GetDown(OVRInput.Button.PrimaryIndexTrigger, OVRInput.Controller.RTouch))
         {
             CreateSpatialAnchor();
-        }
+        }*/
 
-        if (OVRInput.GetDown(OVRInput.Button.One, OVRInput.Controller.RTouch))
-        {
-            SaveLastCreatedAnchor();
-        }
 
-        if (OVRInput.GetDown(OVRInput.Button.Two, OVRInput.Controller.RTouch))
-        {
-            UnsaveLastCreatedAnchor();
-        }
+
 
         if (OVRInput.GetDown(OVRInput.Button.PrimaryHandTrigger, OVRInput.Controller.RTouch))
         {
@@ -140,6 +135,8 @@ public class SpatialAnchorManager : MonoBehaviour
         // Create new
         OVRSpatialAnchor workingAnchor = Instantiate(anchorPrefab, position, rotation);
 
+        workingAnchor.SaveAnchorAsync();
+
         var labelComp = workingAnchor.GetComponent<SpatialLabel>();
         if (labelComp != null) labelComp.Name = name;
 
@@ -180,14 +177,10 @@ public class SpatialAnchorManager : MonoBehaviour
         // if (savedStatusText != null) savedStatusText.text = "Not Saved";
     }
 
-    // ------------------------------------------------------------------------------------
-    // SAVE / ERASE
-    // ------------------------------------------------------------------------------------
-    private void SaveLastCreatedAnchor()
+    private void SaveAnchor(OVRSpatialAnchor anchor)
     {
-        if (lastCreatedAnchor == null) return;
 
-        lastCreatedAnchor.Save((lastCreatedAnchor, success) =>
+        anchor.Save((anchor, success) =>
         {
             if (success)
             {
@@ -196,7 +189,7 @@ public class SpatialAnchorManager : MonoBehaviour
             }
         });
 
-        SaveUuidToPlayerPrefs(lastCreatedAnchor.Uuid);
+        SaveUuidToPlayerPrefs(anchor.Uuid);
     }
 
     void SaveUuidToPlayerPrefs(Guid uuid)
@@ -237,7 +230,7 @@ public class SpatialAnchorManager : MonoBehaviour
         ClearAllUuidsFromPlayerPrefs();
     }
 
-    private void UnsaveAnchor(OVRSpatialAnchor anchor)
+    public void UnsaveAnchor(OVRSpatialAnchor anchor)
     {
         if (anchor == null) return;
 
@@ -357,3 +350,4 @@ public class SpatialAnchorManager : MonoBehaviour
         }
     }
 }
+
