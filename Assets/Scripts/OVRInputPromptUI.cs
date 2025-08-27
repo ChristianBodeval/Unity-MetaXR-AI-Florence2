@@ -1,58 +1,75 @@
 using UnityEngine;
 using UnityEngine.Events;
-using UnityEngine.UI;
 using TMPro;
 
 namespace PresentFutures.XRAI.UI
 {
-    [RequireComponent(typeof(ControllerIconImage))]
     public class OVRInputPromptUI : MonoBehaviour
     {
-        [Header("UI")]
-        [SerializeField] private ControllerIconImage iconImage;   // uses your existing script
-        [SerializeField] private TMP_Text label;                  // "Press A to Remove"
-        [SerializeField] private bool showPressedVariantWhileHeld = true;
+        [Header("Pick input (matches ControllerUI)")]
+        [SerializeField] private ControllerUI.ButtonType input = ControllerUI.ButtonType.A;
 
-        [Header("Input")]
-        public OVRInput.Button button = OVRInput.Button.PrimaryHandTrigger;
-        public OVRInput.Controller controller = OVRInput.Controller.RTouch;
-        public bool useGetDownInvoke = true; // true: invoke on GetDown, false: invoke on GetUp
+        [Header("Hookups")]
+        [SerializeField] private ControllerUI controllerUI;   // controller diagram to highlight
+        [SerializeField] private TMP_Text label;              // e.g. "Press A to do Remove"
+
+        [Header("Behavior")]
+        [Tooltip("Text that fills the second blank: 'Press <INPUT> to do <THIS>'")]
+        [SerializeField] private string actionDisplayName = "do action";
+        [Tooltip("Invoke on GetDown (true) or GetUp (false)")]
+        [SerializeField] private bool useGetDownInvoke = true;
 
         [Header("Action")]
-        [Tooltip("Optional override. If empty, uses the first UnityEvent method name.")]
-        public string actionDisplayName = "";
-        public UnityEvent onPerformed; // hook your Remove method here
+        public UnityEvent onPerformed;
 
         void Reset()
         {
-            iconImage = GetComponent<ControllerIconImage>();
             if (!label) label = GetComponentInChildren<TMP_Text>();
+            if (!controllerUI)
+            {
+                controllerUI = GetComponentInParent<ControllerUI>();
+                if (!controllerUI) controllerUI = FindObjectOfType<ControllerUI>();
+            }
         }
 
         void Awake()
         {
-            if (!iconImage) iconImage = GetComponent<ControllerIconImage>();
-            UpdateUI(pressed: false); // initial
+            if (!label) label = GetComponentInChildren<TMP_Text>();
+            if (!controllerUI)
+            {
+                controllerUI = GetComponentInParent<ControllerUI>();
+                if (!controllerUI) controllerUI = FindObjectOfType<ControllerUI>();
+            }
+
+            // Initial UI
+            ApplyHighlight();
+            UpdateLabel();
+        }
+
+        void OnValidate()
+        {
+            ApplyHighlight();
+            UpdateLabel();
         }
 
         void Update()
         {
-            // 1) Update icon (normal/pressed)
-            bool isPressed = OVRInput.Get(button, controller);
-            if (showPressedVariantWhileHeld) UpdateUI(isPressed);
+            // Keep diagram in sync (handles runtime enum changes)
+            ApplyHighlight();
 
-            // 2) Update label text (kept lightweight)
+            // Input check
+            var map = Map(input);
+            if (map.valid)
+            {
+                bool fired = useGetDownInvoke
+                    ? OVRInput.GetDown(map.btn, map.ctrl)
+                    : OVRInput.GetUp(map.btn, map.ctrl);
+
+                if (fired) SafeInvoke();
+            }
+
+            // Keep label fresh (cheap)
             UpdateLabel();
-
-            // 3) Invoke the mapped action
-            if (useGetDownInvoke)
-            {
-                if (OVRInput.GetDown(button, controller)) SafeInvoke();
-            }
-            else
-            {
-                if (OVRInput.GetUp(button, controller)) SafeInvoke();
-            }
         }
 
         void SafeInvoke()
@@ -61,101 +78,71 @@ namespace PresentFutures.XRAI.UI
             catch (System.Exception e) { Debug.LogException(e); }
         }
 
-        void UpdateUI(bool pressed)
+        void ApplyHighlight()
         {
-            var baseName = SpriteBaseNameFor(button, controller);
-            if (string.IsNullOrEmpty(baseName)) return;
-
-            // Your ControllerIconImage picks a sprite by name from Resources/ControllerInputIcon
-            iconImage.selectedSpriteName = pressed ? (baseName + "-pressed") : baseName;
-            iconImage.ApplySelected();
+            if (controllerUI) controllerUI.SetHighlight(input);
         }
 
         void UpdateLabel()
         {
             if (!label) return;
 
-            string inputName = HumanNameFor(button, controller);
-            string actName = !string.IsNullOrEmpty(actionDisplayName) ? actionDisplayName : EventMethodName();
+            var map = Map(input);
+            string inputName = map.humanName;
+            if (string.IsNullOrWhiteSpace(inputName)) inputName = "Input";
 
-            // fallback if no event wired
-            if (string.IsNullOrEmpty(actName)) actName = "Action";
-
-            label.text = $"Press {inputName} to {actName}";
+            string actionText = string.IsNullOrWhiteSpace(actionDisplayName) ? "do action" : actionDisplayName;
+            label.text = $"Press {inputName} to do {actionText}";
         }
 
-        string EventMethodName()
+        // ---------- Mapping ----------
+        struct InputMap
         {
-            if (onPerformed == null) return "";
-            int n = onPerformed.GetPersistentEventCount();
-            if (n <= 0) return "";
-            // Use first bound method name as a human-ish label
-            string method = onPerformed.GetPersistentMethodName(0);
-            if (string.IsNullOrEmpty(method)) return "";
-
-            // Small prettifier: Remove suffix "Method" and split CamelCase
-            if (method.EndsWith("Method")) method = method.Substring(0, method.Length - "Method".Length);
-            return SplitCamel(method);
+            public bool valid;
+            public OVRInput.Button btn;
+            public OVRInput.Controller ctrl;
+            public string humanName;
         }
 
-        static string SplitCamel(string s)
+        static InputMap Map(ControllerUI.ButtonType t)
         {
-            if (string.IsNullOrEmpty(s)) return s;
-            System.Text.StringBuilder sb = new System.Text.StringBuilder();
-            for (int i = 0; i < s.Length; i++)
+            switch (t)
             {
-                char c = s[i];
-                if (i > 0 && char.IsUpper(c) && char.IsLower(s[i - 1])) sb.Append(' ');
-                sb.Append(c);
+                // LEFT
+                case ControllerUI.ButtonType.X:
+                    return New(OVRInput.Button.One, OVRInput.Controller.LTouch, "X");
+                case ControllerUI.ButtonType.Y:
+                    return New(OVRInput.Button.Two, OVRInput.Controller.LTouch, "Y");
+                case ControllerUI.ButtonType.TriggerL:
+                    return New(OVRInput.Button.PrimaryIndexTrigger, OVRInput.Controller.LTouch, "Left Trigger");
+                case ControllerUI.ButtonType.SecondaryL:
+                    return New(OVRInput.Button.PrimaryHandTrigger, OVRInput.Controller.LTouch, "Left Grip");
+                case ControllerUI.ButtonType.ThumbstickL:
+                    return New(OVRInput.Button.PrimaryThumbstick, OVRInput.Controller.LTouch, "Left Stick");
+                case ControllerUI.ButtonType.BurgerMenu:
+                    return New(OVRInput.Button.Start, OVRInput.Controller.LTouch, "Menu");
+
+                // RIGHT
+                case ControllerUI.ButtonType.A:
+                    return New(OVRInput.Button.One, OVRInput.Controller.RTouch, "A");
+                case ControllerUI.ButtonType.B:
+                    return New(OVRInput.Button.Two, OVRInput.Controller.RTouch, "B");
+                case ControllerUI.ButtonType.TriggerR:
+                    return New(OVRInput.Button.SecondaryIndexTrigger, OVRInput.Controller.RTouch, "Right Trigger");
+                case ControllerUI.ButtonType.SecondaryR:
+                    return New(OVRInput.Button.SecondaryHandTrigger, OVRInput.Controller.RTouch, "Right Grip");
+                case ControllerUI.ButtonType.ThumbstickR:
+                    return New(OVRInput.Button.SecondaryThumbstick, OVRInput.Controller.RTouch, "Right Stick");
+                case ControllerUI.ButtonType.MetaButton:
+                    return New(OVRInput.Button.Back, OVRInput.Controller.RTouch, "Oculus");
+
+                // None / unsupported
+                default:
+                    return default;
             }
-            return sb.ToString();
+
+            static InputMap New(OVRInput.Button b, OVRInput.Controller c, string human)
+                => new InputMap { valid = true, btn = b, ctrl = c, humanName = human };
         }
-
-        // === Mapping helpers ===
-
-        public static string SpriteBaseNameFor(OVRInput.Button btn, OVRInput.Controller ctrl)
-        {
-            // A/B/X/Y
-            if ((btn & OVRInput.Button.One) != 0)
-                return (IsRight(ctrl) ? "button-a" : "button-x");
-            if ((btn & OVRInput.Button.Two) != 0)
-                return (IsRight(ctrl) ? "button-b" : "button-y");
-
-            // Menu / Oculus
-            if ((btn & OVRInput.Button.Start) != 0) return "button-menu";
-            if ((btn & OVRInput.Button.Back) != 0) return "button-oculus";
-
-            // Index triggers
-            if ((btn & OVRInput.Button.PrimaryIndexTrigger) != 0) return "trigger-left";
-            if ((btn & OVRInput.Button.SecondaryIndexTrigger) != 0) return "trigger-right";
-
-            // Hand triggers (grips)
-            if ((btn & OVRInput.Button.PrimaryHandTrigger) != 0) return "grip-left";
-            if ((btn & OVRInput.Button.SecondaryHandTrigger) != 0) return "grip-right";
-
-            // Thumbsticks (click)
-            if ((btn & OVRInput.Button.PrimaryThumbstick) != 0) return "joystick-left";
-            if ((btn & OVRInput.Button.SecondaryThumbstick) != 0) return "joystick-right";
-
-            // Add more mappings as needed (dpad, etc.)
-            return null;
-        }
-
-        public static string HumanNameFor(OVRInput.Button btn, OVRInput.Controller ctrl)
-        {
-            if ((btn & OVRInput.Button.One) != 0) return IsRight(ctrl) ? "A" : "X";
-            if ((btn & OVRInput.Button.Two) != 0) return IsRight(ctrl) ? "B" : "Y";
-            if ((btn & OVRInput.Button.Start) != 0) return "Menu";
-            if ((btn & OVRInput.Button.Back) != 0) return "Oculus";
-            if ((btn & OVRInput.Button.PrimaryIndexTrigger) != 0) return "Left Trigger";
-            if ((btn & OVRInput.Button.SecondaryIndexTrigger) != 0) return "Right Trigger";
-            if ((btn & OVRInput.Button.PrimaryHandTrigger) != 0) return "Left Grip";
-            if ((btn & OVRInput.Button.SecondaryHandTrigger) != 0) return "Right Grip";
-            if ((btn & OVRInput.Button.PrimaryThumbstick) != 0) return "Left Stick";
-            if ((btn & OVRInput.Button.SecondaryThumbstick) != 0) return "Right Stick";
-            return btn.ToString();
-        }
-
-        static bool IsRight(OVRInput.Controller ctrl) => (ctrl & OVRInput.Controller.RTouch) != 0;
     }
 }

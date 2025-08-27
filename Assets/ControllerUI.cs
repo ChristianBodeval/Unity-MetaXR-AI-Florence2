@@ -1,3 +1,4 @@
+using JetBrains.Annotations;
 using UnityEngine;
 
 [ExecuteAlways]
@@ -76,6 +77,12 @@ public class ControllerUI : MonoBehaviour
         Apply();
     }
 
+    public GameObject leftController;
+    public GameObject rightController;
+    public bool isUsingOneController;
+    public Vector3 startingLPos, startingRPos;
+    public GameObject controllerHolder;
+
     private void Apply()
     {
         // 1) reset all to defaults
@@ -113,6 +120,38 @@ public class ControllerUI : MonoBehaviour
             case ButtonType.A: A.Set(outlineHighlight, fillHighlight); break;
             case ButtonType.None:
             default: break;
+        }
+
+
+        if (isUsingOneController)
+        {
+
+            startingRPos = rightController.transform.position;
+            startingLPos = leftController.transform.position;
+
+            if (highlighted == ButtonType.TriggerL || highlighted == ButtonType.SecondaryL || highlighted == ButtonType.ThumbstickL || highlighted == ButtonType.BurgerMenu || highlighted == ButtonType.X || highlighted == ButtonType.Y)
+            {
+                leftController.transform.position = controllerHolder.transform.position;
+
+
+                rightController.transform.position = startingRPos;
+                leftController.SetActive(true);
+                rightController.SetActive(false);
+            }
+
+            else
+            {
+                leftController.transform.position = startingLPos;
+                rightController.transform.position = controllerHolder.transform.position;
+                leftController.SetActive(false);
+                rightController.SetActive(true);
+            }
+        }
+        else {
+            leftController.SetActive(true);
+            rightController.SetActive(true);
+            leftController.transform.position = startingLPos;
+            rightController.transform.position = startingRPos;
         }
     }
 }
