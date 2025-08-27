@@ -11,10 +11,10 @@ namespace PresentFutures.XRAI.UI
 
         [Header("Hookups")]
         [SerializeField] private ControllerUI controllerUI;   // controller diagram to highlight
-        [SerializeField] private TMP_Text label;              // e.g. "Press A to do Remove"
+        [SerializeField] private TMP_Text label;              // e.g. "Press A\naction"
 
         [Header("Behavior")]
-        [Tooltip("Text that fills the second blank: 'Press <INPUT> to do <THIS>'")]
+        [Tooltip("Text shown on the second line (the action).")]
         [SerializeField] private string actionDisplayName = "do action";
         [Tooltip("Invoke on GetDown (true) or GetUp (false)")]
         [SerializeField] private bool useGetDownInvoke = true;
@@ -41,7 +41,6 @@ namespace PresentFutures.XRAI.UI
                 if (!controllerUI) controllerUI = FindObjectOfType<ControllerUI>();
             }
 
-            // Initial UI
             ApplyHighlight();
             UpdateLabel();
         }
@@ -88,11 +87,16 @@ namespace PresentFutures.XRAI.UI
             if (!label) return;
 
             var map = Map(input);
-            string inputName = map.humanName;
-            if (string.IsNullOrWhiteSpace(inputName)) inputName = "Input";
-
+            string inputName = string.IsNullOrWhiteSpace(map.humanName) ? "Input" : map.humanName;
             string actionText = string.IsNullOrWhiteSpace(actionDisplayName) ? "do action" : actionDisplayName;
-            label.text = $"Press {inputName} to do {actionText}";
+
+            // Use ControllerUI's outlineHighlight color for the input name, but FORCE RGB only (no alpha in tag)
+            Color c = controllerUI ? controllerUI.fillHighlight : label.color;
+            string hexRGB = ColorUtility.ToHtmlStringRGB(new Color(c.r, c.g, c.b, 1f)); // #RRGGBB
+
+            // First line: Press <INPUT> (colored + bold)
+            // Second line: the action (always on a new line)
+            label.text = $"Press <b><color=#{hexRGB}>{inputName}</color></b> to\n{actionText}";
         }
 
         // ---------- Mapping ----------
