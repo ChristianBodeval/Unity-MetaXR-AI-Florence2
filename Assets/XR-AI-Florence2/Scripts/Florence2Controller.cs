@@ -775,7 +775,6 @@ namespace PresentFutures.XRAI.Florence
                             null                     // optional label root; pass if you want UI updates here
                         );
 
-
                     }
                 }
 
@@ -854,6 +853,7 @@ namespace PresentFutures.XRAI.Florence
                             hitInfo.normal,
                             null
                         );
+
                     }
                 }
 

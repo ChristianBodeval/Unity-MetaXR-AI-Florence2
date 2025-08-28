@@ -27,10 +27,10 @@ namespace PassthroughCameraSamples.CameraToWorld
         private bool m_snapshotTaken;
         private OVRPose m_snapshotHeadPose;
 
-        private void Awake() => OVRManager.display.RecenteredPose += RecenterCallBack;
 
         private IEnumerator Start()
         {
+            OVRManager.display.RecenteredPose += RecenterCallBack;
             if (m_webCamTextureManager == null)
             {
                 Debug.LogError($"PCA: {nameof(m_webCamTextureManager)} field is required "
@@ -60,6 +60,8 @@ namespace PassthroughCameraSamples.CameraToWorld
             if (m_webCamTextureManager.WebCamTexture == null)
                 return;
             
+
+            /*
             if (OVRInput.GetDown(OVRInput.Button.Two))
             {
                 m_isDebugOn ^= true;
@@ -71,7 +73,7 @@ namespace PassthroughCameraSamples.CameraToWorld
                     // Enable or disable the debug translation of the markers
                     TranslateMarkersForDebug(m_isDebugOn);
                 }
-            }
+            }*/
 
             if (!m_snapshotTaken)
             {

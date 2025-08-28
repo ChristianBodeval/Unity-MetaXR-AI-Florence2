@@ -5,6 +5,7 @@ using System.Linq;
 using UnityEngine;
 using TMPro;
 using PresentFutures.XRAI.Spatial;
+using PresentFutures.XRAI.Florence;
 
 
 public class SpatialAnchorManager : MonoBehaviour
@@ -28,6 +29,7 @@ public class SpatialAnchorManager : MonoBehaviour
     private List<OVRSpatialAnchor> anchors = new List<OVRSpatialAnchor>();
     private OVRSpatialAnchor lastCreatedAnchor;
     private AnchorLoader anchorLoader;
+    public Florence2Controller florence2Controller;
 
     // ---------- Dedup/registry ----------
     private class AnchorEntry
@@ -60,27 +62,13 @@ public class SpatialAnchorManager : MonoBehaviour
         anchorLoader = GetComponent<AnchorLoader>();
     }
 
-    void Update()
+    private void Start()
     {
-        /*
-        if (OVRInput.GetDown(OVRInput.Button.PrimaryIndexTrigger, OVRInput.Controller.RTouch))
-        {
-            CreateSpatialAnchor();
-        }*/
-
-
-
-
-        if (OVRInput.GetDown(OVRInput.Button.PrimaryHandTrigger, OVRInput.Controller.RTouch))
-        {
-            UnsaveAllAnchors();
-        }
-
-        if (OVRInput.GetDown(OVRInput.Button.PrimaryThumbstick, OVRInput.Controller.RTouch))
-        {
-            LoadSavedAnchors();
-        }
+        OVRSpatialAnchor anchor = CreateSpatialAnchorTest();
+        SaveAnchorToPlayerPrefs(anchor);
     }
+
+  
 
     // ------------------------------------------------------------------------------------
     // PUBLIC: Creation (controller-based quick spawn)
@@ -93,7 +81,24 @@ public class SpatialAnchorManager : MonoBehaviour
         OVRSpatialAnchor workingAnchor = Instantiate(anchorPrefab, pos, rot);
 
         canvas = workingAnchor.gameObject.GetComponentInChildren<Canvas>();
+
+
         StartCoroutine(AnchorCreated(workingAnchor));
+        SaveAnchorToPlayerPrefs(workingAnchor);
+    }
+
+    public OVRSpatialAnchor CreateSpatialAnchorTest()
+    {
+        var pos = OVRInput.GetLocalControllerPosition(OVRInput.Controller.RTouch);
+        var rot = OVRInput.GetLocalControllerRotation(OVRInput.Controller.RTouch);
+
+        OVRSpatialAnchor workingAnchor = Instantiate(anchorPrefab, pos, rot);
+
+        canvas = workingAnchor.gameObject.GetComponentInChildren<Canvas>();
+        StartCoroutine(AnchorCreated(workingAnchor));
+
+        SaveAnchorToPlayerPrefs(workingAnchor);
+        return workingAnchor;
     }
 
     // ------------------------------------------------------------------------------------
@@ -143,6 +148,9 @@ public class SpatialAnchorManager : MonoBehaviour
         _pendingMeta[workingAnchor] = (name, surfaceNormal, labelRoot ?? workingAnchor.gameObject);
 
         StartCoroutine(AnchorCreated(workingAnchor));
+
+        SaveAnchorToPlayerPrefs(workingAnchor);
+
         return workingAnchor;
     }
 
@@ -151,10 +159,26 @@ public class SpatialAnchorManager : MonoBehaviour
     // ------------------------------------------------------------------------------------
     private IEnumerator AnchorCreated(OVRSpatialAnchor workingAnchor)
     {
+        Debug.Log("CreatingAnchor");
+
+        float lastLogTime = 0f;
+
+        while (!workingAnchor.Created && !workingAnchor.Localized)
+        {
+            if (Time.time - lastLogTime > 1f) // log once per second
+            {
+                Debug.Log($"[SpatialAnchor] Waiting... Created={workingAnchor.Created}, Localized={workingAnchor.Localized}");
+                lastLogTime = Time.time;
+            }
+            yield return new WaitForEndOfFrame();
+        }
+        /*
         while (!workingAnchor.Created && !workingAnchor.Localized)
         {
             yield return new WaitForEndOfFrame();
-        }
+        }*/
+
+        Debug.Log("Adding");
 
         Guid anchorGuid = workingAnchor.Uuid;
         anchors.Add(workingAnchor);
@@ -172,22 +196,16 @@ public class SpatialAnchorManager : MonoBehaviour
             RegisterAnchor(workingAnchor, label: "Object", normal: Vector3.up, labelGO: workingAnchor.gameObject);
         }
 
+        yield return null;
+
         // (Optional) UI update if you want
         // if (uuidText != null) uuidText.text = "UUID: " + anchorGuid.ToString();
         // if (savedStatusText != null) savedStatusText.text = "Not Saved";
     }
 
-    private void SaveAnchor(OVRSpatialAnchor anchor)
+    private void SaveAnchorToPlayerPrefs(OVRSpatialAnchor anchor)
     {
-
-        anchor.Save((anchor, success) =>
-        {
-            if (success)
-            {
-                Debug.Log("Successful save");
-                if (savedStatusText != null) savedStatusText.text = "Saved";
-            }
-        });
+        anchor.SaveAnchorAsync();
 
         SaveUuidToPlayerPrefs(anchor.Uuid);
     }
@@ -217,11 +235,12 @@ public class SpatialAnchorManager : MonoBehaviour
         });
     }
 
-    private void UnsaveAllAnchors()
+    public void UnsaveAllAnchors()
     {
         foreach (var anchor in anchors)
         {
             UnsaveAnchor(anchor);
+            Destroy(anchor.gameObject);
         }
 
         anchors.Clear();

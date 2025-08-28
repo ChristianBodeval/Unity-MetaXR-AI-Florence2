@@ -66,9 +66,12 @@ public class ControllerUI : MonoBehaviour
     [Header("Select which button to highlight")]
     public ButtonType highlighted = ButtonType.None;
 
-    [Header("Renderer Mode")]
-    [Tooltip("If ON, will use UI Images on the same transforms instead of SpriteRenderers.")]
+    [Header("Values")]
+    public float distanceBetweenControllers;
+
+    //TODO Sprites need fixing
     public bool useUIImages = false;
+    public bool isUsingOneController;
 
     [Header("Colors")]
     public Color outlineDefault = Color.white;
@@ -101,8 +104,6 @@ public class ControllerUI : MonoBehaviour
     [Header("Layout Logic")]
     public GameObject leftController;
     public GameObject rightController;
-    public bool isUsingOneController;
-    public Vector3 startingLPos, startingRPos;
     public GameObject controllerHolder;
 
     void Awake() => Apply();
@@ -113,6 +114,7 @@ public class ControllerUI : MonoBehaviour
         highlighted = type;
         Apply();
     }
+
 
     private void Apply()
     {
@@ -160,32 +162,28 @@ public class ControllerUI : MonoBehaviour
         // layout logic
         if (isUsingOneController)
         {
-            if (rightController) startingRPos = rightController.transform.position;
-            if (leftController) startingLPos = leftController.transform.position;
+            leftController.transform.localPosition = Vector3.zero;
+            rightController.transform.localPosition = Vector3.zero;
 
             if (IsLeftSide(highlighted))
             {
-                if (leftController && controllerHolder)
-                    leftController.transform.position = controllerHolder.transform.position;
-
-                if (rightController) rightController.transform.position = startingRPos;
                 if (leftController) leftController.SetActive(true);
                 if (rightController) rightController.SetActive(false);
             }
             else
             {
-                if (leftController) leftController.transform.position = startingLPos;
-                if (rightController && controllerHolder)
-                    rightController.transform.position = controllerHolder.transform.position;
-
                 if (leftController) leftController.SetActive(false);
                 if (rightController) rightController.SetActive(true);
             }
         }
         else
         {
-            if (leftController) { leftController.SetActive(true); leftController.transform.position = startingLPos; }
-            if (rightController) { rightController.SetActive(true); rightController.transform.position = startingRPos; }
+
+            leftController.transform.localPosition = new Vector3(-distanceBetweenControllers, 0, 0);
+            rightController.transform.localPosition = new Vector3(distanceBetweenControllers, 0, 0);
+
+            if (leftController) { leftController.SetActive(true); }
+            if (rightController) { rightController.SetActive(true); }
         }
     }
 
