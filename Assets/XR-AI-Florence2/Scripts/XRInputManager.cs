@@ -6,7 +6,6 @@ using UnityEditor;
 #endif
 // Place in any namespace you prefer
 
-[ExecuteAlways]
 public class XRInputManager : MonoBehaviour
 {
     [Header("Hookups (auto-found if left empty)")]
@@ -39,6 +38,11 @@ public class XRInputManager : MonoBehaviour
     {
         if (!florence) florence = FindObjectOfType<PresentFutures.XRAI.Florence.Florence2Controller>();
         if (!anchors) anchors = FindObjectOfType<SpatialAnchorManager>();
+    }
+
+    private void Start()
+    {
+        Invoke("LoadAll",2);
     }
 
     void Update()
@@ -89,19 +93,27 @@ public class XRInputManager : MonoBehaviour
             QuickAnchorAtRightController();
     }
 
+    bool useKeyboardNotSimulator;
+
     private void PollKeyboardFallbacks()
     {
-        // A => Detect
-        if (Input.GetKeyDown(KeyCode.A)) Detect();
+        if (useKeyboardNotSimulator)
+        {
+            // A => Detect
+            if (Input.GetKeyDown(KeyCode.A)) Detect();
 
-        // C => Clear/Unsave All
-        if (Input.GetKeyDown(KeyCode.C)) ClearAll();
+            // C => Clear/Unsave All
+            if (Input.GetKeyDown(KeyCode.C)) ClearAll();
 
-        // L => Load
-        if (Input.GetKeyDown(KeyCode.L)) LoadAll();
+            // L => Load
+            if (Input.GetKeyDown(KeyCode.L)) LoadAll();
 
-        // N => Quick Anchor
-        if (enableQuickAnchor && Input.GetKeyDown(KeyCode.N)) QuickAnchorAtRightController();
+            // N => Quick Anchor
+            if (enableQuickAnchor && Input.GetKeyDown(KeyCode.N)) QuickAnchorAtRightController();
+
+            if (Input.GetKeyDown(KeyCode.K) && anchors)
+                anchors.DeleteAnchorsInSceneOnly();
+        }
     }
 
 
@@ -169,6 +181,8 @@ public class XRInputManager : MonoBehaviour
 
         // Use your existing public method so all the same initialization happens
         anchors.CreateSpatialAnchor();
+
+
 
         // (Optional) If you prefer exact transform, uncomment the line below and comment the method above:
         // Instantiate(anchors.anchorPrefab, pos, rot);

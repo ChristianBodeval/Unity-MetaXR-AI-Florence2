@@ -249,9 +249,8 @@ GameObject:
   - component: {fileID: 6563739756580181508}
   - component: {fileID: 2794917581257654543}
   - component: {fileID: 5438014955725548141}
-  - component: {fileID: -3678513331660394245}
   m_Layer: 0
-  m_Name: SpatialLabel
+  m_Name: SpatialLabelForLoading
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -341,18 +340,6 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.21680498, y: 0.33360237, z: 0.3302443}
   m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &-3678513331660394245
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7011814298867290955}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 34e0461a4939d3b4fbdf706bbd80108c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &8804969764500239271
 GameObject:
   m_ObjectHideFlags: 0
@@ -632,10 +619,6 @@ PrefabInstance:
     - target: {fileID: 4178831829691947617, guid: 7948691e53a735b4f868799331ccf8b6, type: 3}
       propertyPath: m_Name
       value: RayInteractable
-      objectReference: {fileID: 0}
-    - target: {fileID: 4178831829691947617, guid: 7948691e53a735b4f868799331ccf8b6, type: 3}
-      propertyPath: m_IsActive
-      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

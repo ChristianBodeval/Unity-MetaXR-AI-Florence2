@@ -2,6 +2,7 @@
 using TMPro;
 using Meta.XR;
 using Meta.XR.BuildingBlocks;
+using System.Threading.Tasks;
 
 namespace PresentFutures.XRAI.Spatial
 {
@@ -27,9 +28,6 @@ namespace PresentFutures.XRAI.Spatial
         [SerializeField] private Transform leftController;
         [SerializeField] private Transform rightController;
 
-
-
-
         [Tooltip("How far the player can target labels for removal.")]
         [SerializeField] private float maxAimDistance = 10f;
 
@@ -43,6 +41,17 @@ namespace PresentFutures.XRAI.Spatial
         private Collider _col;
         private bool _isAimedAt;
         private OVRSpatialAnchor anchor;
+
+        public OVRSpatialAnchor Anchor
+        {
+            get
+            {
+                if (anchor == null)
+                    anchor = GetComponent<OVRSpatialAnchor>();
+                return anchor;
+            }
+            set => anchor = value;
+        }
 
         public string Name
         {
@@ -76,6 +85,11 @@ namespace PresentFutures.XRAI.Spatial
             TryAutoFindControllers();
         }
 
+        private void OnEnable()
+        {
+            anchor = GetComponent<OVRSpatialAnchor>();
+        }
+
         private void OnValidate()
         {
             if (!string.IsNullOrEmpty(_name) && text != null)
@@ -86,6 +100,7 @@ namespace PresentFutures.XRAI.Spatial
 
         private void Start()
         {
+            // Register with label manager if present
             if (SpatialLabelManager.Instance != null)
             {
                 SpatialLabelManager.Instance.RegisterLabel(this);
@@ -95,7 +110,19 @@ namespace PresentFutures.XRAI.Spatial
                 Debug.LogWarning("SpatialLabelManager instance not found!");
             }
 
-            if (!string.IsNullOrEmpty(_name) && text != null)
+            // ✅ Ensure the label name is applied on spawn/load
+            if (SpatialAnchorManager.Instance != null && Anchor != null)
+            {
+                if (SpatialAnchorManager.Instance.TryGetSavedName(Anchor.Uuid, out var savedName))
+                {
+                    Name = savedName;
+                }
+                else if (!string.IsNullOrEmpty(_name) && text != null)
+                {
+                    text.text = _name;
+                }
+            }
+            else if (!string.IsNullOrEmpty(_name) && text != null)
             {
                 text.text = _name;
             }
@@ -178,15 +205,32 @@ namespace PresentFutures.XRAI.Spatial
         /// <summary>
         /// Removes this label from the scene and unregisters it from the manager.
         /// </summary>
-        public void Remove()
+        public async void Remove()
         {
-            if (SpatialAnchorManager.Instance != null)
-            {
-                SpatialAnchorManager.Instance.UnsaveAnchor(anchor);
-            }
+            SpatialAnchorManager.Instance.UnsaveAnchor(Anchor);
+            Disable();
+            Invoke(nameof(MyDestoyer), 2f);
+        }
 
-            Debug.Log($"[{name}] Removed.");
+        public void MyDestoyer()
+        {
             Destroy(gameObject);
+        }
+
+        public void Disable()
+        {
+            foreach (Transform child in transform.GetComponentsInChildren<Transform>())
+            {
+                child.gameObject.SetActive(false);
+            }
+        }
+
+        public void Enable()
+        {
+            foreach (Transform child in transform.GetComponentsInChildren<Transform>())
+            {
+                child.gameObject.SetActive(true);
+            }
         }
 
         private void OnDestroy()
