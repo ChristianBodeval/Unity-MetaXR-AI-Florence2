@@ -3,6 +3,10 @@ using TMPro;
 using Meta.XR;
 using Meta.XR.BuildingBlocks;
 using System.Threading.Tasks;
+using NaughtyAttributes;
+
+
+
 
 namespace PresentFutures.XRAI.Spatial
 {
@@ -17,7 +21,7 @@ namespace PresentFutures.XRAI.Spatial
         }
 
         [Header("UI")]
-        [SerializeField] private string _name;     // Exposed to inspector
+        [SerializeField] private string _objectName;     // Exposed to inspector
         [SerializeField] private TMP_Text text;
 
         [Header("Aim & Remove")]
@@ -53,15 +57,15 @@ namespace PresentFutures.XRAI.Spatial
             set => anchor = value;
         }
 
-        public string Name
+        public string ObjectName
         {
-            get => _name;
+            get => _objectName;
             set
             {
                 if (!string.IsNullOrEmpty(value))
                 {
-                    _name = value;
-                    if (text != null) text.text = _name;
+                    _objectName = value;
+                    if (text != null) text.text = _objectName;
                 }
             }
         }
@@ -92,9 +96,9 @@ namespace PresentFutures.XRAI.Spatial
 
         private void OnValidate()
         {
-            if (!string.IsNullOrEmpty(_name) && text != null)
+            if (!string.IsNullOrEmpty(_objectName) && text != null)
             {
-                text.text = _name;
+                text.text = _objectName;
             }
         }
 
@@ -115,16 +119,16 @@ namespace PresentFutures.XRAI.Spatial
             {
                 if (SpatialAnchorManager.Instance.TryGetSavedName(Anchor.Uuid, out var savedName))
                 {
-                    Name = savedName;
+                    ObjectName = savedName;
                 }
-                else if (!string.IsNullOrEmpty(_name) && text != null)
+                else if (!string.IsNullOrEmpty(_objectName) && text != null)
                 {
-                    text.text = _name;
+                    text.text = _objectName;
                 }
             }
-            else if (!string.IsNullOrEmpty(_name) && text != null)
+            else if (!string.IsNullOrEmpty(_objectName) && text != null)
             {
-                text.text = _name;
+                text.text = _objectName;
             }
 
             if (_mainCam == null) _mainCam = Camera.main;
@@ -288,6 +292,26 @@ namespace PresentFutures.XRAI.Spatial
                 if (go) return go.transform;
             }
             return null;
+        }
+        public MeshRenderer meshRenderer;
+        public Material foundMaterial;
+        public Material normalMaterial;
+
+        public void MakePressenceAware(bool isFound)
+        {
+            if (isFound)
+            {
+                meshRenderer.material = foundMaterial;
+            }
+            else
+            {
+                meshRenderer.material = normalMaterial;
+            }
+        }
+        [Button]
+        public void Tester()
+        {
+            MakePressenceAware(true);
         }
     }
 }

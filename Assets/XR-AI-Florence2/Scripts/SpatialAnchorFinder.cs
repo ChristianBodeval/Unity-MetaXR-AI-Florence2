@@ -1,3 +1,4 @@
+using Meta.WitAi.Attributes;
 using PresentFutures.XRAI.Spatial;
 using System;
 using System.Collections;
@@ -208,7 +209,10 @@ public class SpatialAnchorFinder : MonoBehaviour
             if (!anchor) continue;
 
             var label = anchor.transform.GetComponent<SpatialLabel>();
-            if (label && string.Equals(label.name, labelName, StringComparison.Ordinal))
+
+            string objectName = label.ObjectName;
+
+            if (label && string.Equals(objectName, labelName, StringComparison.Ordinal))
             {
                 matches.Add(anchor);
             }
@@ -216,6 +220,31 @@ public class SpatialAnchorFinder : MonoBehaviour
 
         return matches;
     }
+
+    [Button]
+    public void MakeAnchorsPresenceAwareByLabelName(string labelName)
+    {
+        var anchors = GetAnchorsBySpatialLabelName(labelName);
+
+        foreach (var anchor in anchors)
+        {
+            if (!anchor) continue;
+
+            var spatialAnchor = anchor.transform.GetComponent<SpatialLabel>();
+            if (spatialAnchor != null)
+            {
+                spatialAnchor.MakePressenceAware(true);
+            }
+            else
+            {
+                Debug.LogWarning($"Anchor '{anchor.name}' does not have a SpatialAnchor component.");
+            }
+        }
+    }
+
+
+
+
 
 
 

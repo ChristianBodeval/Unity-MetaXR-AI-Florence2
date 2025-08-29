@@ -120,7 +120,7 @@ public class SpatialAnchorManager : MonoBehaviour
         canvas = workingAnchor.gameObject.GetComponentInChildren<Canvas>();
 
         var labelComp = workingAnchor.GetComponent<PresentFutures.XRAI.Spatial.SpatialLabel>();
-        if (labelComp != null) labelComp.Name = name;
+        if (labelComp != null) labelComp.ObjectName = name;
 
         // No surface normal provided here—store a default upward normal.
         _pendingMeta[workingAnchor] = (name, Vector3.up, workingAnchor.gameObject);
@@ -144,7 +144,7 @@ public class SpatialAnchorManager : MonoBehaviour
         OVRSpatialAnchor workingAnchor = Instantiate(anchorPrefab, position, rotation);
 
         var labelComp = workingAnchor.GetComponent<PresentFutures.XRAI.Spatial.SpatialLabel>();
-        if (labelComp != null) labelComp.Name = name;
+        if (labelComp != null) labelComp.ObjectName = name;
 
         _pendingMeta[workingAnchor] = (name, surfaceNormal, labelRoot ?? workingAnchor.gameObject);
 
@@ -205,11 +205,11 @@ public class SpatialAnchorManager : MonoBehaviour
             if (string.IsNullOrEmpty(finalName))
             {
                 // Fall back to existing label component name or a generic default
-                finalName = string.IsNullOrEmpty(labelComp.Name) ? "Object" : labelComp.Name;
+                finalName = string.IsNullOrEmpty(labelComp.ObjectName) ? "Object" : labelComp.ObjectName;
             }
 
             // ✅ Ensure SpatialLabel shows the name as soon as the anchor spawns
-            labelComp.Name = finalName;
+            labelComp.ObjectName = finalName;
         }
 
         // Register in our dedup registry

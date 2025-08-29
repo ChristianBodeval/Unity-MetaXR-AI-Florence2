@@ -277,6 +277,12 @@ namespace PresentFutures.XRAI.Florence
             StartCoroutine(SendApiRequest());
         }
 
+        [Button]
+        public void TestMethod()
+        {
+            SpatialAnchorFinder.Instance.MakeAnchorsPresenceAwareByLabelName("lamp");
+        }
+
         // It prepares the data and then calls our new async method.
         private IEnumerator SendApiRequest()
         {
@@ -836,6 +842,9 @@ namespace PresentFutures.XRAI.Florence
 
                     _spawnedBoxes.Add(boxGO);
                 }
+
+
+
 
                 if ((anchorMode == FlorenceAnchorMode.SpatialLabel3D || anchorMode == FlorenceAnchorMode.Both) && spatialAnchorPrefab != null && environmentRaycastManager != null)
                 {

@@ -320,6 +320,9 @@ MonoBehaviour:
     m_Bits: 4294967295
   drawAimGizmo: 1
   InteractUI: {fileID: 2765543000714344788}
+  meshRenderer: {fileID: 3361284552148577036}
+  foundMaterial: {fileID: 2100000, guid: cc1de0e42a52de6448f0f8de158fbed8, type: 2}
+  normalMaterial: {fileID: 2100000, guid: 0c0540537096ec54db2ccce88e295b04, type: 2}
 --- !u!65 &5438014955725548141
 BoxCollider:
   m_ObjectHideFlags: 0
