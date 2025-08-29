@@ -230,6 +230,7 @@ namespace PresentFutures.XRAI.Florence
 
         public GameObject cameraViewPyramidPrefab;
 
+
         [Button]
         public void SendRequest()
         {
@@ -240,10 +241,13 @@ namespace PresentFutures.XRAI.Florence
             _detectionResults.Clear();
             _overlayTexture = null;
 
-            currentCameraPosition = PassthroughCameraUtils.GetCameraPoseInWorld(PassthroughCameraEye.Left);
-            mysnap = PassthroughCameraOffline.CaptureSnapshot(PassthroughCameraEye.Left, savedFrame: myCapturedTexture);
 
-            
+
+            #if !UNITY_EDITOR && UNITY_ANDROID
+                currentCameraPosition = PassthroughCameraUtils.GetCameraPoseInWorld(PassthroughCameraEye.Left);
+                mysnap = PassthroughCameraOffline.CaptureSnapshot(PassthroughCameraEye.Left, savedFrame: myCapturedTexture);
+            #endif
+
 
             // >>> NEW: multi-request branch
             if (multiRequestMode)

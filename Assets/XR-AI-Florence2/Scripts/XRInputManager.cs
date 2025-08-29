@@ -93,7 +93,7 @@ public class XRInputManager : MonoBehaviour
             QuickAnchorAtRightController();
     }
 
-    bool useKeyboardNotSimulator;
+    public bool useKeyboardNotSimulator;
 
     private void PollKeyboardFallbacks()
     {
