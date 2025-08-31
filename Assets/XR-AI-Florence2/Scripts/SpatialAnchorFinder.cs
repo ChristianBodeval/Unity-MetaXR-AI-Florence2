@@ -24,7 +24,7 @@ public class SpatialAnchorFinder : MonoBehaviour
     [Min(0.2f)] public float refreshIntervalSeconds = 2f;
 
     [Header("Tracked Anchors (runtime only, for debugging)")]
-    [SerializeField] private List<OVRSpatialAnchor> trackedAnchors = new();
+    [SerializeField] public List<OVRSpatialAnchor> trackedAnchors = new();
 
     // Internal fast lookup (uuid -> anchor)
     private readonly Dictionary<string, OVRSpatialAnchor> _byUuid = new();

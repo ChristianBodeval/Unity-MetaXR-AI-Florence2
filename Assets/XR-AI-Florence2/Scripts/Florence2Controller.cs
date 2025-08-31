@@ -700,6 +700,9 @@ namespace PresentFutures.XRAI.Florence
                 float w = det.BoundingBox.width * scaleX;
                 float h = det.BoundingBox.height * scaleY;
 
+
+                StartCoroutine(WizManager.Instance.AddKeywordCoroutine(det.Label));
+
                 if (anchorMode == FlorenceAnchorMode.BoundingBox2D || anchorMode == FlorenceAnchorMode.Both)
                 {
                     GameObject boxGO = Instantiate(boundingBoxPrefab, boundingBoxContainer);

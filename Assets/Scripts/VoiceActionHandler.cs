@@ -1,0 +1,82 @@
+using Oculus.Voice;
+using TMPro;
+using UnityEngine;
+
+public class VoiceActionHandler : MonoBehaviour
+{
+    public string transcription;
+    
+    //TODO Add later
+    //public VoiceInputController voiceInputController;
+    AppVoiceExperience appVoiceExperience;
+    public TMP_Text text;
+    // Start is called once before the first execution of Update after the MonoBehaviour is created
+
+
+    private void OnEnable()
+    {
+        if (!appVoiceExperience) return;
+
+        // Listen for simulated/editor and mic input equally
+        appVoiceExperience.VoiceEvents.OnFullTranscription.AddListener(OnFinalTranscription);
+    }
+
+    private void OnDisable()
+    {
+        if (!appVoiceExperience) return;
+        appVoiceExperience.VoiceEvents.OnFullTranscription.RemoveListener(OnFinalTranscription);
+    }
+
+    private void OnFinalTranscription(string transcription)
+    {
+        this.transcription = transcription;
+        Debug.Log($"[EditorTest] Final Transcription: {transcription}");
+        // If you typed "This is the transcription:" in inspector ? this will log it
+    }
+
+    void Start()
+    {
+        appVoiceExperience = GetComponent<AppVoiceExperience>();
+    }
+
+    void Update()
+    {
+        if (OVRInput.GetDown(OVRInput.Button.One, OVRInput.Controller.RTouch))
+        {
+            Debug.Log("Right Trigger Pressed - Activating Voice Experience!");
+            // Start listening
+            appVoiceExperience.Activate();
+        }
+
+        else if (OVRInput.GetUp(OVRInput.Button.One, OVRInput.Controller.RTouch))
+        {
+            Debug.Log("Right Trigger Pressed - Activating Voice Experience!");
+            // Start listening
+            appVoiceExperience.Deactivate();
+        }
+
+    }
+
+    
+
+    public void HandleAction(string[] stringArray)
+    {
+        text.text = "HandleAction";
+        Debug.LogWarning("Calling Handle Action");
+        if (stringArray[0] == "add note")
+        {
+            text.text = "Adding a note to " + stringArray[1] + "Transcript: " + "//TODO ADD HERE";
+            Debug.LogWarning("Adding a note to" + stringArray[1] + "Transcript: " + "//TODO ADD HERE" );
+            SpatialAnchorFinder.Instance.MakeAnchorsPresenceAwareByLabelName(stringArray[1]);
+        }
+        else if (stringArray[0] == "Find object") { Debug.LogFormat("ok"); }
+
+        else
+        {
+            //TODO Add send response later
+            //voiceInputController.newHandleFullTranscription(transcription);
+            //StartCoroutine(voiceInputController.newHandleFullTranscription(appVoiceExperience));
+        }
+
+    }
+}

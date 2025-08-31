@@ -17,6 +17,10 @@ EditorBuildSettings:
   - enabled: 0
     path: Assets/XR-AI-Florence2/PassthroughCamera/CameraToWorld/CameraToWorld.unity
     guid: 756785b371a4f49438b7e2148816e892
+  - enabled: 0
+    path: Assets/Samples/Meta - Voice SDK - Immersive Voice Commands/77.0.0/Shapes
+      with Conduit/ShapesConduit.unity
+    guid: 5aa24c94acb775043bd5c44d48c21d68
   m_configObjects:
     Unity.XR.Oculus.Settings: {fileID: 11400000, guid: 48708d634d764904d95a533bfc151d50, type: 2}
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}

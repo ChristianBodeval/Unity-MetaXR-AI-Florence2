@@ -1,6 +1,8 @@
 using OVR; // optional; harmless if missing as long as Oculus Integration is installed
 using UnityEngine;
 using UnityEngine.Events;
+using System;
+
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -80,6 +82,9 @@ public class XRInputManager : MonoBehaviour
         if (OVRInput.GetDown(OVRInput.Button.One, OVRInput.Controller.RTouch))
             Detect();
 
+        if (OVRInput.GetDown(OVRInput.Button.Two, OVRInput.Controller.LTouch))
+            ActivateVoiceCommand();
+
         // Right Grip => Clear/Unsave All
         if (OVRInput.GetDown(OVRInput.Button.PrimaryHandTrigger, OVRInput.Controller.RTouch))
             ClearAll();
@@ -91,6 +96,12 @@ public class XRInputManager : MonoBehaviour
         // Optional: Quick Anchor on Right Index Trigger
         if (enableQuickAnchor && OVRInput.GetDown(OVRInput.Button.PrimaryIndexTrigger, OVRInput.Controller.RTouch))
             QuickAnchorAtRightController();
+    }
+
+    
+    private void ActivateVoiceCommand()
+    {
+        VoiceManager.Instance.ActivateVoiceCommand();
     }
 
     public bool useKeyboardNotSimulator;
