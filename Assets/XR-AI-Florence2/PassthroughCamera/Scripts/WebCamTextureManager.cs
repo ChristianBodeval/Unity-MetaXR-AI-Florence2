@@ -1,10 +1,11 @@
     // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+using Meta.XR.Samples;
 using System.Collections;
 using System.Linq;
-using Meta.XR.Samples;
 using UnityEngine;
 using UnityEngine.Assertions;
+using static Oculus.Interaction.Context;
 using PCD = PassthroughCameraSamples.PassthroughCameraDebugger;
 
 namespace PassthroughCameraSamples
@@ -12,6 +13,7 @@ namespace PassthroughCameraSamples
     [MetaCodeSample("PassthroughCameraApiSamples-PassthroughCamera")]
     public class WebCamTextureManager : MonoBehaviour
     {
+        public static WebCamTextureManager Instance;
         [SerializeField] public PassthroughCameraEye Eye = PassthroughCameraEye.Left;
         [SerializeField, Tooltip("The requested resolution of the camera may not be supported by the chosen camera. In such cases, the closest available values will be used.\n\n" +
                                  "When set to (0,0), the highest supported resolution will be used.")]
@@ -27,6 +29,7 @@ namespace PassthroughCameraSamples
 
         private void Awake()
         {
+            Instance = this;
             PCD.DebugMessage(LogType.Log, $"{nameof(WebCamTextureManager)}.{nameof(Awake)}() was called");
             Assert.AreEqual(1, FindObjectsByType<WebCamTextureManager>(FindObjectsInactive.Include, FindObjectsSortMode.None).Length,
                 $"PCA: Passthrough Camera: more than one {nameof(WebCamTextureManager)} component. Only one instance is allowed at a time. Current instance: {name}");

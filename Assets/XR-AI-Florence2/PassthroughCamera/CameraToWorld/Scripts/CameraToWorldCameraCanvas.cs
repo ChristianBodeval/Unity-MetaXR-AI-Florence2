@@ -10,11 +10,17 @@ namespace PassthroughCameraSamples.CameraToWorld
     [MetaCodeSample("PassthroughCameraApiSamples-CameraToWorld")]
     public class CameraToWorldCameraCanvas : MonoBehaviour
     {
+        public bool isLive;
         [SerializeField] private WebCamTextureManager m_webCamTextureManager;
         [SerializeField] private Text m_debugText;
         [SerializeField] private RawImage m_image;
         private Texture2D m_cameraSnapshot;
         private Color32[] m_pixelsBuffer;
+
+        private void Awake()
+        {
+            m_webCamTextureManager = WebCamTextureManager.Instance;
+        }
 
         public void MakeCameraSnapshot()
         {
@@ -49,6 +55,7 @@ namespace PassthroughCameraSamples.CameraToWorld
             }
             if (m_debugText) m_debugText.text = "WebCamTexture Object ready and playing.";
             ResumeStreamingFromCamera();
+            if(!isLive) MakeCameraSnapshot();
         }
 
         private void Update()

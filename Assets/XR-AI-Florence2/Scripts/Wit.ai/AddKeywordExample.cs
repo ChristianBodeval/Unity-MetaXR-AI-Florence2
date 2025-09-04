@@ -57,14 +57,13 @@ public class AddKeywordExample : MonoBehaviour
         }
     }
 
+    public string TestStringToAdd;
     [Button]
     public void AddKeywordTest()
     {
         Debug.Log("[AddKeywordExample] Starting AddKeyword coroutine…");
-        StartCoroutine(AddKeyword("lamp"));
+        StartCoroutine(AddKeyword(TestStringToAdd));
     }
-
-
 
 
     [System.Serializable]

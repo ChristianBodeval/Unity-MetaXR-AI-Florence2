@@ -57,6 +57,27 @@ MonoBehaviour:
       - name: object
         id: 1814550372472444
       keywords:
+      - keyword: Fork
+        synonyms:
+        - fork
+      - keyword: backpack
+        synonyms:
+        - backpack
+      - keyword: bed
+        synonyms:
+        - bed
+      - keyword: book
+        synonyms:
+        - book
+      - keyword: bottle
+        synonyms:
+        - bottle
+      - keyword: bowl
+        synonyms:
+        - bowl
+      - keyword: box
+        synonyms:
+        - box
       - keyword: cabinetry
         synonyms:
         - cabinetry
@@ -75,6 +96,9 @@ MonoBehaviour:
       - keyword: carpet
         synonyms:
         - carpet
+      - keyword: chair
+        synonyms:
+        - chair
       - keyword: coffee cup
         synonyms:
         - coffee cup
@@ -93,6 +117,21 @@ MonoBehaviour:
       - keyword: coffee maker
         synonyms:
         - coffee maker
+      - keyword: computer box
+        synonyms:
+        - computer box
+      - keyword: computer keyboard
+        synonyms:
+        - computer keyboard
+      - keyword: computer monitor
+        synonyms:
+        - computer monitor
+      - keyword: computer monitor
+        synonyms:
+        - computer monitor
+      - keyword: computer mouse
+        synonyms:
+        - computer mouse
       - keyword: countertop
         synonyms:
         - countertop
@@ -108,6 +147,12 @@ MonoBehaviour:
       - keyword: cutting board
         synonyms:
         - cutting board
+      - keyword: desk
+        synonyms:
+        - desk
+      - keyword: door
+        synonyms:
+        - door
       - keyword: faucet
         synonyms:
         - faucet
@@ -126,33 +171,111 @@ MonoBehaviour:
       - keyword: lamp
         synonyms:
         - lamp
+      - keyword: laptop
+        synonyms:
+        - laptop
+      - keyword: loudspeaker
+        synonyms:
+        - loudspeaker
+      - keyword: mirror
+        synonyms:
+        - mirror
+      - keyword: mobile phone
+        synonyms:
+        - mobile phone
+      - keyword: mouse
+        synonyms:
+        - mouse
       - keyword: oven
         synonyms:
         - oven
       - keyword: oven
         synonyms:
         - oven
+      - keyword: pen
+        synonyms:
+        - pen
+      - keyword: pen
+        synonyms:
+        - pen
+      - keyword: pen
+        synonyms:
+        - pen
+      - keyword: person
+        synonyms:
+        - person
+      - keyword: person
+        synonyms:
+        - person
+      - keyword: picture frame
+        synonyms:
+        - picture frame
+      - keyword: pillow
+        synonyms:
+        - pillow
       - keyword: plate
         synonyms:
         - plate
+      - keyword: power outlet
+        synonyms:
+        - power outlet
+      - keyword: power outlet
+        synonyms:
+        - power outlet
       - keyword: radiator
         synonyms:
         - radiator
+      - keyword: remote control
+        synonyms:
+        - remote control
+      - keyword: screwdriver
+        synonyms:
+        - screwdriver
+      - keyword: screwdriver
+        synonyms:
+        - screwdriver
+      - keyword: shelf
+        synonyms:
+        - shelf
       - keyword: sink
         synonyms:
         - sink
+      - keyword: slippers
+        synonyms:
+        - slippers
       - keyword: spatula
         synonyms:
         - spatula
+      - keyword: spoon
+        synonyms:
+        - spoon
+      - keyword: spoon
+        synonyms:
+        - spoon
       - keyword: stool
         synonyms:
         - stool
       - keyword: stool
         synonyms:
         - stool
+      - keyword: tea
+        synonyms:
+        - tea
+      - keyword: television
+        synonyms:
+        - television
+      - keyword: tin can
+        synonyms:
+        - tin can
       - keyword: toaster
         synonyms:
         - toaster
+      - keyword: wild bird
+        synonyms:
+        - wild bird
+      - keyword: window blind
+        synonyms:
+        - window blind
     traits: []
     versionTags: []
     voices:

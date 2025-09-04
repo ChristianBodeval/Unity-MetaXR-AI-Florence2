@@ -2,6 +2,12 @@ using OVR; // optional; harmless if missing as long as Oculus Integration is ins
 using UnityEngine;
 using UnityEngine.Events;
 using System;
+using Meta.WitAi.Dictation;
+using Oculus.Voice.Dictation;
+using Meta.Voice.Samples.Dictation;
+
+
+
 
 #if UNITY_EDITOR
 using UnityEditor;
@@ -27,6 +33,11 @@ public class XRInputManager : MonoBehaviour
     public UnityEvent OnClearAllAnchors;     // Fired when we clear/unsave all
     public UnityEvent OnQuickAnchor;         // Fired when we create a quick test anchor
 
+    public GameObject TranscriptionUI;
+    public MultiRequestTranscription textScript;
+    public DictationActivation dictationActivation;
+    public AppDictationExperience dictationExperience;
+    public TranscriptionUI transcriptionUI;
     // --- Default bindings (Meta Quest Touch controllers) ---
     // Right controller:
     //   A  => Detect (OVRInput.Button.One)
@@ -96,12 +107,17 @@ public class XRInputManager : MonoBehaviour
         // Optional: Quick Anchor on Right Index Trigger
         if (enableQuickAnchor && OVRInput.GetDown(OVRInput.Button.PrimaryIndexTrigger, OVRInput.Controller.RTouch))
             QuickAnchorAtRightController();
+
     }
 
     
     private void ActivateVoiceCommand()
     {
         VoiceManager.Instance.ActivateVoiceCommand();
+        textScript.Clear();
+        TranscriptionUI.SetActive(true);
+        dictationExperience.Activate();
+        transcriptionUI.StopAllCoroutines();
     }
 
     public bool useKeyboardNotSimulator;

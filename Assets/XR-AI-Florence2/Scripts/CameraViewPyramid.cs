@@ -1,10 +1,11 @@
 ﻿using UnityEngine;
 using UnityEngine.UI; // <— for RawImage
-
+using PassthroughCameraSamples.CameraToWorld;
 [ExecuteAlways]
 [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
 public class CameraViewPyramid : MonoBehaviour
 {
+    
     public enum EyeMode { Mono, Left, Right, Center }
 
     [Header("Camera")]
@@ -44,6 +45,12 @@ public class CameraViewPyramid : MonoBehaviour
     void Reset() { EnsureComponents(); Rebuild(); }
     void OnValidate() { EnsureComponents(); Rebuild(); }
     void Update() { if (liveUpdate) Rebuild(); }
+
+    public CameraToWorldCameraCanvas cameraToWorldCameraCanvas;
+    private void Start()
+    {
+        cameraToWorldCameraCanvas.isLive = true;
+    }
 
     void EnsureComponents()
     {
@@ -126,16 +133,16 @@ public class CameraViewPyramid : MonoBehaviour
         if (a_img <= a_cam)
         {
             // narrower than camera -> pillarbox (reduce width)
-            float w = a_img / a_cam;
-            float x = centerCrop ? (1f - w) * 0.5f : 0f;
-            return new Rect(x, 0f, w, 1f);
+            float h = a_cam / a_img;
+            float x = centerCrop ? (1f - h) * 0.5f : 0f;
+            return new Rect(x, 0f, h, 1f);
         }
         else
         {
             // wider than camera -> letterbox (reduce height)
-            float h = a_cam / a_img;
-            float y = centerCrop ? (1f - h) * 0.5f : 0f;
-            return new Rect(0f, y, 1f, h);
+            float w = a_img / a_cam;
+            float y = centerCrop ? (1f - w) * 0.5f : 0f;
+            return new Rect(0f, y, 1f, w);
         }
     }
 

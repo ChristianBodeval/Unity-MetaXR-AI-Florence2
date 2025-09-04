@@ -1,4 +1,7 @@
+using JetBrains.Annotations;
+using Meta.WitAi.Dictation;
 using Oculus.Voice;
+using PresentFutures.XRAI.Florence;
 using TMPro;
 using UnityEngine;
 
@@ -27,7 +30,15 @@ public class VoiceActionHandler : MonoBehaviour
         appVoiceExperience.VoiceEvents.OnFullTranscription.RemoveListener(OnFinalTranscription);
     }
 
-    private void OnFinalTranscription(string transcription)
+    public void OnFinalTranscription(string transcription)
+    {
+        this.transcription = transcription;
+        Debug.Log($"[EditorTest] Final Transcription: {transcription}");
+        // If you typed "This is the transcription:" in inspector ? this will log it
+    }
+
+
+    public void SetTranscription(string transcription)
     {
         this.transcription = transcription;
         Debug.Log($"[EditorTest] Final Transcription: {transcription}");
@@ -41,6 +52,8 @@ public class VoiceActionHandler : MonoBehaviour
 
     void Update()
     {
+
+
         if (OVRInput.GetDown(OVRInput.Button.One, OVRInput.Controller.RTouch))
         {
             Debug.Log("Right Trigger Pressed - Activating Voice Experience!");
@@ -57,8 +70,9 @@ public class VoiceActionHandler : MonoBehaviour
 
     }
 
-    
-
+    public Florence2Controller florence2Controller;
+    public TMP_Text voicePrompt;
+    public MultiRequestTranscription multiRequestTranscription;
     public void HandleAction(string[] stringArray)
     {
         text.text = "HandleAction";
@@ -71,8 +85,18 @@ public class VoiceActionHandler : MonoBehaviour
         }
         else if (stringArray[0] == "Find object") { Debug.LogFormat("ok"); }
 
-        else
+
+
+        else if (stringArray[0] == "track")
         {
+            florence2Controller.task = Florence2Task.OpenVocabularyDetection;
+            florence2Controller.textPrompt = multiRequestTranscription.currentTranscription;
+
+            florence2Controller.SendRequest();
+
+            Debug.Log("Current trans: " + transcription);
+
+            Debug.Log("This is the trans: " + transcription);
             //TODO Add send response later
             //voiceInputController.newHandleFullTranscription(transcription);
             //StartCoroutine(voiceInputController.newHandleFullTranscription(appVoiceExperience));
