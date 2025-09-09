@@ -221,6 +221,29 @@ public class SpatialAnchorFinder : MonoBehaviour
         return matches;
     }
 
+    public OVRSpatialAnchor GetAnchorsBySpatialLabelNameFirstFound(string labelName)
+    {
+        List<OVRSpatialAnchor> matches = new List<OVRSpatialAnchor>();
+        if (string.IsNullOrEmpty(labelName))
+            return null;
+        foreach (var anchor in trackedAnchors)
+        {
+            if (!anchor) continue;
+
+            var label = anchor.transform.GetComponent<SpatialLabel>();
+
+            string objectName = label.ObjectName;
+
+            if (label && string.Equals(objectName, labelName, StringComparison.Ordinal))
+            {
+                return anchor;
+            }
+        }
+        return null;
+    }
+
+
+
     [Button]
     public void MakeAnchorsPresenceAwareByLabelName(string labelName)
     {

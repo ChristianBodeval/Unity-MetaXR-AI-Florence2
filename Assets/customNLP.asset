@@ -49,6 +49,9 @@ MonoBehaviour:
       - keyword: find
         synonyms:
         - find
+      - keyword: track
+        synonyms:
+        - track
     - name: object
       id: 794716519651524
       lookups:
@@ -186,6 +189,9 @@ MonoBehaviour:
       - keyword: mouse
         synonyms:
         - mouse
+      - keyword: my new word
+        synonyms:
+        - my new word
       - keyword: oven
         synonyms:
         - oven

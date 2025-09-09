@@ -5,6 +5,7 @@ using System;
 using Meta.WitAi.Dictation;
 using Oculus.Voice.Dictation;
 using Meta.Voice.Samples.Dictation;
+using PresentFutures.XRAI.Florence;
 
 
 
@@ -16,16 +17,23 @@ using UnityEditor;
 
 public class XRInputManager : MonoBehaviour
 {
+    public static XRInputManager Instance;
     [Header("Hookups (auto-found if left empty)")]
-    public PresentFutures.XRAI.Florence.Florence2Controller florence;
-    public SpatialAnchorManager anchors;
+    public Florence2Controller florenceController;
+    public SpatialAnchorManager anchorManager;
 
-    [Header("Behavior")]
-    [Tooltip("Use handy keyboard fallbacks in the Editor (A=Detect, L=Load, C=Clear, N=Quick Anchor).")]
+    [Header("Attributes")]
     public bool enableKeyboardFallback = true;
-
-    [Tooltip("Quick-anchor: spawn at right controller pose (mirrors your SpatialAnchorManager.CreateSpatialAnchor()).")]
     public bool enableQuickAnchor = true;
+    public bool useKeyboardNotSimulator;
+
+    [Header("References")]
+    public GameObject TranscriptionUI;
+    public MultiRequestTranscription textScript;
+    public DictationActivation dictationActivation;
+    public AppDictationExperience dictationExperience;
+    public TranscriptionUI transcriptionUI;
+    public VoiceActionHandler voiceActionHandler;
 
     [Header("Unity Events (optional)")]
     public UnityEvent OnDetectRequested;     // Fired when we request Florence detection
@@ -33,24 +41,15 @@ public class XRInputManager : MonoBehaviour
     public UnityEvent OnClearAllAnchors;     // Fired when we clear/unsave all
     public UnityEvent OnQuickAnchor;         // Fired when we create a quick test anchor
 
-    public GameObject TranscriptionUI;
-    public MultiRequestTranscription textScript;
-    public DictationActivation dictationActivation;
-    public AppDictationExperience dictationExperience;
-    public TranscriptionUI transcriptionUI;
-    // --- Default bindings (Meta Quest Touch controllers) ---
-    // Right controller:
-    //   A  => Detect (OVRInput.Button.One)
-    //   Right Grip => Clear/Unsave All (OVRInput.Button.PrimaryHandTrigger, RTouch)
-    //   Right Thumbstick Click => Load (OVRInput.Button.PrimaryThumbstick, RTouch)
-    //
-    // Optional:
-    //   Right Index Trigger click => Quick Anchor (toggle via enableQuickAnchor)
+
+    [Header("RunTime values")]
+    public OVRSpatialAnchor currentlySelectedAnchor;
 
     void Awake()
     {
-        if (!florence) florence = FindObjectOfType<PresentFutures.XRAI.Florence.Florence2Controller>();
-        if (!anchors) anchors = FindObjectOfType<SpatialAnchorManager>();
+        Instance = this;
+        if (!florenceController) florenceController = FindObjectOfType<PresentFutures.XRAI.Florence.Florence2Controller>();
+        if (!anchorManager) anchorManager = FindObjectOfType<SpatialAnchorManager>();
     }
 
     private void Start()
@@ -110,17 +109,10 @@ public class XRInputManager : MonoBehaviour
 
     }
 
-    
     private void ActivateVoiceCommand()
     {
-        VoiceManager.Instance.ActivateVoiceCommand();
-        textScript.Clear();
-        TranscriptionUI.SetActive(true);
-        dictationExperience.Activate();
-        transcriptionUI.StopAllCoroutines();
+        voiceActionHandler.ActivateVoiceCommand();
     }
-
-    public bool useKeyboardNotSimulator;
 
     private void PollKeyboardFallbacks()
     {
@@ -138,8 +130,8 @@ public class XRInputManager : MonoBehaviour
             // N => Quick Anchor
             if (enableQuickAnchor && Input.GetKeyDown(KeyCode.N)) QuickAnchorAtRightController();
 
-            if (Input.GetKeyDown(KeyCode.K) && anchors)
-                anchors.DeleteAnchorsInSceneOnly();
+            if (Input.GetKeyDown(KeyCode.K) && anchorManager)
+                anchorManager.DeleteAnchorsInSceneOnly();
         }
     }
 
@@ -149,9 +141,12 @@ public class XRInputManager : MonoBehaviour
     private void Detect()
     {
         OnDetectRequested?.Invoke();
-        if (florence)
+        if (florenceController)
         {
-            florence.SendRequest();
+            florenceController.task = Florence2Task.DenseRegionCaption;
+            
+
+            florenceController.SendRequest();
             Debug.Log("Sending request");
         }
         else
@@ -164,9 +159,9 @@ public class XRInputManager : MonoBehaviour
     {
         Debug.Log("LOading all");
         OnLoadAnchors?.Invoke();
-        if (anchors)
+        if (anchorManager)
         {
-            anchors.LoadSavedAnchors();
+            anchorManager.LoadSavedAnchors();
         }
         else
         {
@@ -178,13 +173,9 @@ public class XRInputManager : MonoBehaviour
     {
         Debug.Log("Clearing all");
         OnClearAllAnchors?.Invoke();
-        if (anchors)
+        if (anchorManager)
         {
-            // Your manager exposes UnsaveAllAnchors() as private; call the public path by iterating?
-            // But you already wired this exact input inside the manager.
-            // To keep concerns separated, we call its public helper instead by simulating your existing behavior:
-            // Provide a tiny public wrapper if you want to avoid duplication. For now, do the safe route:
-            anchors.UnsaveAllAnchors();
+            anchorManager.UnsaveAllAnchors();
         }
         else
         {
@@ -196,22 +187,13 @@ public class XRInputManager : MonoBehaviour
     {
         OnQuickAnchor?.Invoke();
 
-        if (!anchors)
+        if (!anchorManager)
         {
             Debug.LogWarning("[XRInputManager] SpatialAnchorManager not found.");
             return;
         }
-
-        // Mirror your CreateSpatialAnchor() (controller-based quick spawn)
         var pos = OVRInput.GetLocalControllerPosition(OVRInput.Controller.RTouch);
         var rot = OVRInput.GetLocalControllerRotation(OVRInput.Controller.RTouch);
-
-        // Use your existing public method so all the same initialization happens
-        anchors.CreateSpatialAnchor();
-
-
-
-        // (Optional) If you prefer exact transform, uncomment the line below and comment the method above:
-        // Instantiate(anchors.anchorPrefab, pos, rot);
+        anchorManager.CreateSpatialAnchor();
     }
 }

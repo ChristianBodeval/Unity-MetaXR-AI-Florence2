@@ -13,6 +13,7 @@ using System.IO.Compression;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using TMPro;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
@@ -68,6 +69,8 @@ namespace PresentFutures.XRAI.Florence
         public string OverlayPngBase64 { get; set; }
     }
 
+
+
     [Serializable]
     public class Choice
     {
@@ -121,6 +124,8 @@ namespace PresentFutures.XRAI.Florence
 
     public class Florence2Controller : MonoBehaviour
     {
+
+        public TMP_Text captionTextField;
         [Header("NVIDIA API Settings")]
         [Tooltip("Your NVIDIA API Key")]
         [SerializeField] private ApiConfig apiConfiguration;
@@ -312,6 +317,8 @@ namespace PresentFutures.XRAI.Florence
             };
             string jsonPayload = JsonConvert.SerializeObject(payload);
 
+
+
             statusText.text = "Sending request...";
 
             // Start the async network request and get a "Task" handle for it.
@@ -475,6 +482,15 @@ namespace PresentFutures.XRAI.Florence
 
                                 Florence2Response response = JsonConvert.DeserializeObject<Florence2Response>(jsonContent);
 
+                                if (response?.Choices != null && response.Choices.Count > 0)
+                                {
+                                    string caption = response.Choices[0].Message.Content;
+                                    Debug.Log($"[Florence2] Caption: {caption}");
+
+                                    captionTextField.text = caption;
+                                }
+
+
                                 if (response == null)
                                 {
                                     Debug.LogError("JSON Deserialization failed. The response object is null.");
@@ -541,6 +557,14 @@ namespace PresentFutures.XRAI.Florence
                                     Debug.LogError($"[{requestId}] JSON parse failed.");
                                     continue;
                                 }
+
+                                if (response?.Choices != null && response.Choices.Count > 0)
+                                {
+                                    string caption = response.Choices[0].Message.Content;
+                                    Debug.Log($"[Florence2] Caption: {caption}");
+                                    captionTextField.text = caption;
+                                }
+
 
                                 if (response.Choices != null && response.Choices.Count > 0 && response.Choices[0]?.Message?.Entities != null)
                                 {
@@ -788,6 +812,9 @@ namespace PresentFutures.XRAI.Florence
                             null                     // optional label root; pass if you want UI updates here
                         );
 
+
+
+                        //TODO Add x and y to SpatialLabel Here
                     }
                 }
 

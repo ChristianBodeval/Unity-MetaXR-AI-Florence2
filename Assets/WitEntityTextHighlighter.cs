@@ -20,7 +20,7 @@ public class WitEntityTextHighlighter : MonoBehaviour
     [SerializeField] private string apiVersion = "20240304";
 
     [Header("References")]
-    [SerializeField] private TMP_Text targetText; // drag in your TMP_Text
+    [SerializeField] public TMP_Text targetText; // drag in your TMP_Text
 
     [Header("Colors")]
     [SerializeField] private Color actionsColor = new Color(0.95f, 0.55f, 0.20f); // orange
@@ -108,7 +108,6 @@ public class WitEntityTextHighlighter : MonoBehaviour
                     // Copy unique values into the public list for inspector display
                     publicList.AddRange(targetSet);
 
-                    Debug.Log($"[WitEntityTextHighlighter] Loaded {targetSet.Count} unique keywords for '{entityName}'.");
                 }
                 catch (Exception e)
                 {

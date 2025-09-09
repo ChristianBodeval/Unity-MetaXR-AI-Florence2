@@ -27,10 +27,10 @@ public class VoiceManager : MonoBehaviour
     }
 
 
-    [Button]
-    public void ActivateVoiceCommand()
+
+    public void DeactivateVoiceCommand()
     {
-            appVoice.Activate();   // ✅ no assignment
+        appVoice.Deactivate();   // ✅ no assignment
     }
     /*
     void Update()

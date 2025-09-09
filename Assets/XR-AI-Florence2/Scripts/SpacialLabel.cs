@@ -73,6 +73,34 @@ namespace PresentFutures.XRAI.Spatial
         [Header("References")]
         public GameObject InteractUI;
 
+        public Transform borderTransform;
+
+        [SerializeField] private float _xBorderValue;
+        public float XBorderValue {  
+            get => _xBorderValue; 
+            set { 
+                    _xBorderValue = value;
+                    borderTransform.localScale = new Vector3(_xBorderValue, borderTransform.localScale.y,borderTransform.localScale.z);
+                } 
+            }
+
+
+        [SerializeField] private float _yBorderValue;
+        public float YBorderValue
+        {
+            get => _yBorderValue;
+            set
+            {
+                _yBorderValue = value;
+                borderTransform.localScale = new Vector3(borderTransform.localScale.x, _yBorderValue, borderTransform.localScale.z);
+                Debug.Log("Setting _yBorderValue");
+            }
+        }
+
+
+        
+
+
         private void Awake()
         {
             anchor = GetComponent<OVRSpatialAnchor>();
@@ -100,7 +128,28 @@ namespace PresentFutures.XRAI.Spatial
             {
                 text.text = _objectName;
             }
+
+            borderTransform.localScale = new Vector3(_xBorderValue, _yBorderValue, borderTransform.localScale.z);
         }
+
+        public bool isHidden;
+        
+
+        public void Hide(bool b)
+        {
+            isHidden = b;
+
+            meshRenderer.enabled = !b;
+            text.enabled = !b;
+        }
+
+
+        [Button]
+        public void HideTester()
+        {
+            Hide(!isHidden);
+        }
+
 
         private void Start()
         {
@@ -153,13 +202,20 @@ namespace PresentFutures.XRAI.Spatial
                     // Remove on B / Button.Two (right controller) or LMB (editor)
                     if (OVRInput.GetDown(OVRInput.Button.Two))
                     {
-                        Remove();
+                        //Remove();
                     }
                     if (Input.GetMouseButtonDown(0))
                     {
                         Remove();
                     }
+
+                    XRInputManager.Instance.currentlySelectedAnchor = Anchor;
                 }
+            }
+
+            else
+            {
+
             }
 
             if (InteractUI) InteractUI.SetActive(_isAimedAt);

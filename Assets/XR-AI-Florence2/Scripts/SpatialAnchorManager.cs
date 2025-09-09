@@ -1,6 +1,5 @@
 ﻿using Meta.XR.BuildingBlocks;
 using PresentFutures.XRAI.Florence;
-using PresentFutures.XRAI.Spatial;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -8,10 +7,13 @@ using System.Linq;
 using System.Threading.Tasks;
 using TMPro;
 using UnityEngine;
+using PresentFutures.XRAI.Spatial;
+
 
 public class SpatialAnchorManager : MonoBehaviour
 {
     public static SpatialAnchorManager Instance { get; private set; }
+
 
     [Header("Anchor Prefab")]
     public OVRSpatialAnchor anchorPrefab;
@@ -240,6 +242,15 @@ public class SpatialAnchorManager : MonoBehaviour
                 if (savedStatusText != null) savedStatusText.text = "Not Saved";
             }
         });
+    }
+
+
+    public void HideAllAnchors(bool b)
+    {
+        foreach (var anchor in anchors)
+        {
+            anchor.GetComponent<SpatialLabel>().Hide(b);
+        }
     }
 
     public void UnsaveAllAnchors()
