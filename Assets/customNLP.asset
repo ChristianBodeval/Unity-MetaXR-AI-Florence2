@@ -58,12 +58,12 @@ MonoBehaviour:
       - keyword: rename
         synonyms:
         - rename
+      - keyword: scan
+        synonyms:
+        - scan
       - keyword: show objects
         synonyms:
         - show objects
-      - keyword: track
-        synonyms:
-        - track
     - name: object
       id: 794716519651524
       lookups:
@@ -75,12 +75,66 @@ MonoBehaviour:
       - keyword: Fork
         synonyms:
         - fork
+      - keyword: Scan blue ball
+        synonyms:
+        - scan blue ball
+      - keyword: Scan blue bottle
+        synonyms:
+        - scan blue bottle
+      - keyword: Scan blue paddle
+        synonyms:
+        - scan blue paddle
+      - keyword: Scan blue portal
+        synonyms:
+        - scan blue portal
+      - keyword: all box
+        synonyms:
+        - all box
+      - keyword: almonds
+        synonyms:
+        - almonds
       - keyword: backpack
         synonyms:
         - backpack
       - keyword: bed
         synonyms:
         - bed
+      - keyword: black headset
+        synonyms:
+        - black headset
+      - keyword: black keyboard
+        synonyms:
+        - black keyboard
+      - keyword: black keyboard
+        synonyms:
+        - black keyboard
+      - keyword: blue bottle
+        synonyms:
+        - blue bottle
+      - keyword: blue box
+        synonyms:
+        - blue box
+      - keyword: blue box
+        synonyms:
+        - blue box
+      - keyword: blue button
+        synonyms:
+        - blue button
+      - keyword: blue paddle
+        synonyms:
+        - blue paddle
+      - keyword: blue plate
+        synonyms:
+        - blue plate
+      - keyword: blue salt box
+        synonyms:
+        - blue salt box
+      - keyword: blue self box
+        synonyms:
+        - blue self box
+      - keyword: blues
+        synonyms:
+        - blues
       - keyword: book
         synonyms:
         - book
@@ -93,6 +147,12 @@ MonoBehaviour:
       - keyword: box
         synonyms:
         - box
+      - keyword: bucket
+        synonyms:
+        - bucket
+      - keyword: building at night with sun shining through window blinds
+        synonyms:
+        - building at night with sun shining through window blinds
       - keyword: cabinetry
         synonyms:
         - cabinetry
@@ -165,6 +225,12 @@ MonoBehaviour:
       - keyword: desk
         synonyms:
         - desk
+      - keyword: dirty kitchen
+        synonyms:
+        - dirty kitchen
+      - keyword: dirty kitchen counter
+        synonyms:
+        - dirty kitchen counter
       - keyword: door
         synonyms:
         - door
@@ -174,9 +240,21 @@ MonoBehaviour:
       - keyword: gas stove
         synonyms:
         - gas stove
+      - keyword: green salt box
+        synonyms:
+        - green salt box
+      - keyword: green salt box
+        synonyms:
+        - green salt box
       - keyword: house
         synonyms:
         - house
+      - keyword: kitchen counter with dishes and utensils
+        synonyms:
+        - kitchen counter with dishes and utensils
+      - keyword: knife
+        synonyms:
+        - knife
       - keyword: lamp
         synonyms:
         - lamp
@@ -192,6 +270,9 @@ MonoBehaviour:
       - keyword: loudspeaker
         synonyms:
         - loudspeaker
+      - keyword: metal can
+        synonyms:
+        - metal can
       - keyword: mirror
         synonyms:
         - mirror
@@ -204,6 +285,15 @@ MonoBehaviour:
       - keyword: my new word
         synonyms:
         - my new word
+      - keyword: neutral jar
+        synonyms:
+        - neutral jar
+      - keyword: neutral jar
+        synonyms:
+        - neutral jar
+      - keyword: notch
+        synonyms:
+        - notch
       - keyword: oven
         synonyms:
         - oven
@@ -243,6 +333,12 @@ MonoBehaviour:
       - keyword: radiator
         synonyms:
         - radiator
+      - keyword: rainbow cup
+        synonyms:
+        - rainbow cup
+      - keyword: rainbow cup
+        synonyms:
+        - rainbow cup
       - keyword: remote control
         synonyms:
         - remote control
@@ -255,6 +351,9 @@ MonoBehaviour:
       - keyword: shelf
         synonyms:
         - shelf
+      - keyword: shelves
+        synonyms:
+        - shelves
       - keyword: sink
         synonyms:
         - sink
@@ -288,12 +387,51 @@ MonoBehaviour:
       - keyword: toaster
         synonyms:
         - toaster
+      - keyword: tool
+        synonyms:
+        - tool
+      - keyword: white venetian blinds
+        synonyms:
+        - white venetian blinds
+      - keyword: whiteboard
+        synonyms:
+        - whiteboard
       - keyword: wild bird
         synonyms:
         - wild bird
+      - keyword: window
+        synonyms:
+        - window
       - keyword: window blind
         synonyms:
         - window blind
+      - keyword: window blinds
+        synonyms:
+        - window blinds
+      - keyword: window blinds in dark room
+        synonyms:
+        - window blinds in dark room
+      - keyword: wooden shelf
+        synonyms:
+        - wooden shelf
+      - keyword: wooden shelving unit with dishes and kitchen utensils
+        synonyms:
+        - wooden shelving unit with dishes and kitchen utensils
+      - keyword: wooden shelving unit with pots and pans
+        synonyms:
+        - wooden shelving unit with pots and pans
+      - keyword: wooden shelving unit with various items on it
+        synonyms:
+        - wooden shelving unit with various items on it
+      - keyword: wooden spattle
+        synonyms:
+        - wooden spattle
+      - keyword: wooden spattle
+        synonyms:
+        - wooden spattle
+      - keyword: yellow plate
+        synonyms:
+        - yellow plate
     traits: []
     versionTags: []
     voices:
