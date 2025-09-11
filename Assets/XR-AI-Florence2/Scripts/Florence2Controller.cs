@@ -12,6 +12,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Net.Http;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using TMPro;
 using Unity.VisualScripting;
@@ -280,12 +281,6 @@ namespace PresentFutures.XRAI.Florence
             // >>> END NEW
 
             StartCoroutine(SendApiRequest());
-        }
-
-        [Button]
-        public void TestMethod()
-        {
-            SpatialAnchorFinder.Instance.MakeAnchorsPresenceAwareByLabelName("lamp");
         }
 
         // It prepares the data and then calls our new async method.
@@ -725,12 +720,12 @@ namespace PresentFutures.XRAI.Florence
                 float h = det.BoundingBox.height * scaleY;
 
 
-                StartCoroutine(WizManager.Instance.AddKeywordCoroutine(det.Label));
+                StartCoroutine(WizManager.Instance.AddKeywordCoroutine(ModifyString(det.Label)));
 
                 if (anchorMode == FlorenceAnchorMode.BoundingBox2D || anchorMode == FlorenceAnchorMode.Both)
                 {
                     GameObject boxGO = Instantiate(boundingBoxPrefab, boundingBoxContainer);
-                    boxGO.name = "BBox_" + det.Label;
+                    boxGO.name = "BBox_" + ModifyString(det.Label);
                     var rt = boxGO.GetComponent<RectTransform>();
                     // Anchor to top-left so we can use positive x and negative y.
                     rt.anchorMin = new Vector2(0, 1);
@@ -741,11 +736,13 @@ namespace PresentFutures.XRAI.Florence
 
                     // find label child
                     var txt = boxGO.GetComponentInChildren<TMPro.TextMeshProUGUI>();
-                    if (txt) txt.text = det.Label;
 
 
-                    Debug.Log("spatialAnchorPrefab: " + spatialAnchorPrefab + " " + "det.Label: " + det.Label + " " + "boxGO: " + boxGO);
-                    SpatialAnchorManager.Instance.CreateSpatialAnchor(spatialAnchorPrefab, boxGO.transform.position, Quaternion.identity, det.Label);
+                    if (txt) txt.text = ModifyString(det.Label);
+
+
+                    Debug.Log("spatialAnchorPrefab: " + spatialAnchorPrefab + " " + "det.Label: " + ModifyString(det.Label) + " " + "boxGO: " + boxGO);
+                    SpatialAnchorManager.Instance.CreateSpatialAnchor(spatialAnchorPrefab, boxGO.transform.position, Quaternion.identity, ModifyString(det.Label));
 
 
                     _spawnedBoxes.Add(boxGO);
@@ -801,13 +798,12 @@ namespace PresentFutures.XRAI.Florence
 
 
 
-
                         var lookRot = Quaternion.LookRotation(Camera.main.transform.position - hitInfo.point, Vector3.up);
                         var anchor = SpatialAnchorManager.Instance.CreateSpatialAnchor(
                             spatialAnchorPrefab,
                             hitInfo.point,
                             lookRot,
-                            det.Label,
+                            ModifyString(det.Label),
                             hitInfo.normal,          // <-- important for dedup
                             null                     // optional label root; pass if you want UI updates here
                         );
@@ -821,6 +817,12 @@ namespace PresentFutures.XRAI.Florence
                 yield return new WaitForSeconds(0.1f);
             }
         }
+
+        string ModifyString(string s)
+        {
+            return s.Replace("the ", "").Replace("a ", "");
+        }
+
         #endregion
 
         // >>> NEW: per-request visual spawn that uses the request's own snapshot and captured texture
@@ -850,6 +852,9 @@ namespace PresentFutures.XRAI.Florence
                     yield break;
                 }
 
+
+                StartCoroutine(WizManager.Instance.AddKeywordCoroutine(ModifyString(det.Label)));
+
                 float x = det.BoundingBox.x * scaleX;
                 float y = det.BoundingBox.y * scaleY;
                 float w = det.BoundingBox.width * scaleX;
@@ -858,7 +863,7 @@ namespace PresentFutures.XRAI.Florence
                 if (anchorMode == FlorenceAnchorMode.BoundingBox2D || anchorMode == FlorenceAnchorMode.Both)
                 {
                     GameObject boxGO = Instantiate(boundingBoxPrefab, boundingBoxContainer);
-                    boxGO.name = "BBox_" + det.Label + "_" + req.RequestId.Substring(0, 6);
+                    boxGO.name = "BBox_" + ModifyString(det.Label) + "_" + req.RequestId.Substring(0, 6);
 
                     var rt = boxGO.GetComponent<RectTransform>();
                     rt.anchorMin = new Vector2(0, 1);
@@ -868,7 +873,8 @@ namespace PresentFutures.XRAI.Florence
                     rt.sizeDelta = new Vector2(w, h);
 
                     var txt = boxGO.GetComponentInChildren<TMPro.TextMeshProUGUI>();
-                    if (txt) txt.text = det.Label;
+
+                    if (txt) txt.text = ModifyString(det.Label);
 
                     _spawnedBoxes.Add(boxGO);
                 }
@@ -885,6 +891,8 @@ namespace PresentFutures.XRAI.Florence
 
                     var ray = PassthroughCameraOffline.NormalizedToRayInWorld(req.Snap, new Vector2(u, v));
 
+
+
                     if (environmentRaycastManager.Raycast(ray, out EnvironmentRaycastHit hitInfo))
                     {
                         var lookRot = Quaternion.LookRotation(Camera.main.transform.position - hitInfo.point, Vector3.up);
@@ -892,7 +900,7 @@ namespace PresentFutures.XRAI.Florence
                             spatialAnchorPrefab,
                             hitInfo.point,
                             lookRot,
-                            det.Label,
+                            ModifyString(det.Label),
                             hitInfo.normal,
                             null
                         );

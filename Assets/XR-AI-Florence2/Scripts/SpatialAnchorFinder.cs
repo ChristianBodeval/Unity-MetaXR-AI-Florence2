@@ -192,9 +192,6 @@ public class SpatialAnchorFinder : MonoBehaviour
         return true;
     }
 
-
-
-
     /// <summary>
     /// Returns a list of all anchors whose SpatialLabel name matches.
     /// </summary>
@@ -242,21 +239,17 @@ public class SpatialAnchorFinder : MonoBehaviour
         return null;
     }
 
-
-
     [Button]
-    public void MakeAnchorsPresenceAwareByLabelName(string labelName)
+    public void MakeAnchorsPresenceAwareByLabelName(List<OVRSpatialAnchor> anchors, bool b)
     {
-        var anchors = GetAnchorsBySpatialLabelName(labelName);
-
         foreach (var anchor in anchors)
         {
             if (!anchor) continue;
 
             var spatialAnchor = anchor.transform.GetComponent<SpatialLabel>();
             if (spatialAnchor != null)
-            {
-                spatialAnchor.MakePressenceAware(true);
+            {   
+                spatialAnchor.MakePressenceAware(b);
             }
             else
             {
@@ -264,11 +257,4 @@ public class SpatialAnchorFinder : MonoBehaviour
             }
         }
     }
-
-
-
-
-
-
-
 }

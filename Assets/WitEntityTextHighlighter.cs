@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Text;
 using System.Text.RegularExpressions;
 using TMPro;
 using UnityEngine;
@@ -30,8 +31,9 @@ public class WitEntityTextHighlighter : MonoBehaviour
     [ReadOnly] public List<string> actionsList = new List<string>();
     [ReadOnly] public List<string> objectsList = new List<string>();
 
-    private HashSet<string> _actionsSet = new HashSet<string>(StringComparer.InvariantCultureIgnoreCase);
-    private HashSet<string> _objectsSet = new HashSet<string>(StringComparer.InvariantCultureIgnoreCase);
+    // Case-insensitive sets so "track" == "Track" == "TRACK"
+    private readonly HashSet<string> _actionsSet = new HashSet<string>(StringComparer.InvariantCultureIgnoreCase);
+    private readonly HashSet<string> _objectsSet = new HashSet<string>(StringComparer.InvariantCultureIgnoreCase);
 
     [Serializable] private class WitEntityResponse { public WitKeyword[] keywords; }
     [Serializable] private class WitKeyword { public string keyword; public string[] synonyms; }
@@ -107,7 +109,6 @@ public class WitEntityTextHighlighter : MonoBehaviour
 
                     // Copy unique values into the public list for inspector display
                     publicList.AddRange(targetSet);
-
                 }
                 catch (Exception e)
                 {
@@ -122,9 +123,8 @@ public class WitEntityTextHighlighter : MonoBehaviour
     }
 
     /// <summary>
-    /// Call this method to recolor whatever text is already in targetText.
+    /// Call this to recolor whatever text is already in targetText.
     /// </summary>
-
     [Button]
     public void HighlightText()
     {
@@ -136,34 +136,153 @@ public class WitEntityTextHighlighter : MonoBehaviour
 
     private string BuildColoredText(string input)
     {
-        string result = input;
+        if (string.IsNullOrEmpty(input)) return input;
 
+        // Precompute color hex
         string actionHex = ColorUtility.ToHtmlStringRGB(actionsColor);
         string objectHex = ColorUtility.ToHtmlStringRGB(objectsColor);
 
+        // Sort by length (desc) to prefer longer matches first
         var allActions = new List<string>(_actionsSet);
         var allObjects = new List<string>(_objectsSet);
         allActions.Sort((a, b) => b.Length.CompareTo(a.Length));
         allObjects.Sort((a, b) => b.Length.CompareTo(a.Length));
 
-        foreach (var keyword in allActions)
+        // Build a lookup for quick category detection in evaluator
+        var categoryLookup = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase);
+        foreach (var s in allActions) if (!string.IsNullOrWhiteSpace(s)) categoryLookup[s] = "action";
+        foreach (var s in allObjects) if (!string.IsNullOrWhiteSpace(s) && !categoryLookup.ContainsKey(s)) categoryLookup[s] = "object";
+
+        // Build a single alternation pattern with word boundaries for all keywords
+        // Example: \b(?:turn on|track|play)\b
+        string alternation = BuildAlternation(allActions, allObjects);
+        if (string.IsNullOrEmpty(alternation)) return input;
+
+        var keywordRegex = new Regex(@"\b(?:" + alternation + @")\b",
+            RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+
+        // Split into segments by TMP/rich-text tags so we don't recolor inside <...>
+        // We keep the tags as-is and only process plain text segments.
+        var segments = SplitByTags(input);
+
+        var sb = new StringBuilder(input.Length + 64);
+        foreach (var seg in segments)
         {
-            if (string.IsNullOrEmpty(keyword)) continue;
-            string pattern = $@"\b{Regex.Escape(keyword)}\b";
-            result = Regex.Replace(result, pattern,
-                m => $"<color=#{actionHex}>{m.Value}</color>",
-                RegexOptions.IgnoreCase);
+            if (seg.isTag)
+            {
+                // pass tags through
+                sb.Append(seg.text);
+                continue;
+            }
+
+            // Replace keywords in this plain-text segment
+            string replaced = keywordRegex.Replace(seg.text, m =>
+            {
+                string val = m.Value; // original casing preserved
+                // Determine category using lookup (case-insensitive)
+                string cat;
+                if (!categoryLookup.TryGetValue(val, out cat))
+                {
+                    // Fallback: find by scanning (handles different casing)
+                    cat = _actionsSet.Contains(val) ? "action" : (_objectsSet.Contains(val) ? "object" : null);
+                }
+
+                if (cat == "action")
+                    return $"<color=#{actionHex}>{val}</color>";
+                else if (cat == "object")
+                    return $"<color=#{objectHex}>{val}</color>";
+                else
+                    return val;
+            });
+
+            sb.Append(replaced);
         }
 
-        foreach (var keyword in allObjects)
+        return sb.ToString();
+    }
+
+    // --- Helpers ---
+
+    private static string BuildAlternation(List<string> actions, List<string> objects)
+    {
+        // Combine, remove empties, sort by length desc to prefer longest first
+        var all = new List<string>(actions.Count + objects.Count);
+        foreach (var s in actions) if (!string.IsNullOrWhiteSpace(s)) all.Add(s);
+        foreach (var s in objects) if (!string.IsNullOrWhiteSpace(s)) all.Add(s);
+
+        if (all.Count == 0) return null;
+
+        all.Sort((a, b) => b.Length.CompareTo(a.Length)); // longest-first
+
+        // Escape each for regex; join with |
+        for (int i = 0; i < all.Count; i++)
+            all[i] = Regex.Escape(all[i]);
+
+        return string.Join("|", all);
+    }
+
+    // Splits a string into (text|tag) parts where tags are <...> (TMP rich-text)
+    private static List<(string text, bool isTag)> SplitByTags(string input)
+    {
+        var parts = new List<(string text, bool isTag)>();
+        int i = 0;
+        while (i < input.Length)
         {
-            if (string.IsNullOrEmpty(keyword)) continue;
-            string pattern = $@"\b{Regex.Escape(keyword)}\b";
-            result = Regex.Replace(result, pattern,
-                m => $"<color=#{objectHex}>{m.Value}</color>",
-                RegexOptions.IgnoreCase);
+            int lt = input.IndexOf('<', i);
+            if (lt < 0)
+            {
+                parts.Add((input.Substring(i), false));
+                break;
+            }
+
+            // text before tag
+            if (lt > i)
+                parts.Add((input.Substring(i, lt - i), false));
+
+            int gt = input.IndexOf('>', lt + 1);
+            if (gt < 0)
+            {
+                // no closing '>', treat rest as text
+                parts.Add((input.Substring(lt), false));
+                break;
+            }
+
+            // tag itself
+            parts.Add((input.Substring(lt, gt - lt + 1), true));
+            i = gt + 1;
         }
 
-        return result;
+        if (parts.Count == 0)
+            parts.Add((input, false));
+
+        return parts;
+    }
+
+    // Optional: programmatic additions at runtime (case-insensitive store)
+    public void AddActionKeyword(string keyword)
+    {
+        if (string.IsNullOrWhiteSpace(keyword)) return;
+        _actionsSet.Add(keyword.Trim());
+        if (!actionsList.Contains(keyword, StringComparer.InvariantCultureIgnoreCase))
+            actionsList.Add(keyword.Trim());
+    }
+
+    public void AddObjectKeyword(string keyword)
+    {
+        if (string.IsNullOrWhiteSpace(keyword)) return;
+        _objectsSet.Add(keyword.Trim());
+        if (!objectsList.Contains(keyword, StringComparer.InvariantCultureIgnoreCase))
+            objectsList.Add(keyword.Trim());
+    }
+}
+
+// Small helper for List.Contains with IEqualityComparer (Unity doesn't ship LINQ's overload for Lists)
+static class ListExtensions
+{
+    public static bool Contains(this List<string> list, string value, StringComparer comparer)
+    {
+        foreach (var s in list)
+            if (comparer.Equals(s, value)) return true;
+        return false;
     }
 }

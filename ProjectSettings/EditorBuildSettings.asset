@@ -21,6 +21,9 @@ EditorBuildSettings:
     path: Assets/Samples/Meta - Voice SDK - Immersive Voice Commands/77.0.0/Shapes
       with Conduit/ShapesConduit.unity
     guid: 5aa24c94acb775043bd5c44d48c21d68
+  - enabled: 0
+    path: "Assets/Samples/Meta XR Interaction \u200BSDK/77.0.0/Example Scenes/UISetExamples.unity"
+    guid: 07e3686372a704147b219707ee3c6f62
   m_configObjects:
     Unity.XR.Oculus.Settings: {fileID: 11400000, guid: 48708d634d764904d95a533bfc151d50, type: 2}
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}

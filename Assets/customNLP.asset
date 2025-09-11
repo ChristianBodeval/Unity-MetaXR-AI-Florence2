@@ -46,9 +46,21 @@ MonoBehaviour:
       - keyword: add note
         synonyms:
         - add note
+      - keyword: delete
+        synonyms:
+        - delete
       - keyword: find
         synonyms:
         - find
+      - keyword: hide objects
+        synonyms:
+        - hide objects
+      - keyword: rename
+        synonyms:
+        - rename
+      - keyword: show objects
+        synonyms:
+        - show objects
       - keyword: track
         synonyms:
         - track

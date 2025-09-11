@@ -8,11 +8,11 @@ using TMPro;
 using UnityEngine;
 using NaughtyAttributes;
 using UnityEngine.UI;
+using System.Collections.Generic;
 public class VoiceActionHandler : MonoBehaviour
 {
     [Header("References")]
     public AppVoiceExperience appVoiceExperience;
-    public MultiRequestTranscription multiRequestTranscription;
     public TranscriptionUI transcriptionUIScript;
     public Florence2Controller florence2Controller;
     public TextFadeOut UICommandThrown;
@@ -92,6 +92,8 @@ public class VoiceActionHandler : MonoBehaviour
         appVoiceExperience.Deactivate();   // ✅ no assignment
     }
 
+    public List<OVRSpatialAnchor> lastFoundAnchors = new List<OVRSpatialAnchor>();
+
     public void HandleAction(string[] stringArray)
     {
         florenceSettingText.text = "HandleAction";
@@ -103,16 +105,31 @@ public class VoiceActionHandler : MonoBehaviour
         }
 
         else if (stringArray[0] == "Find" || stringArray[0] == "find") {
-            SpatialAnchorFinder.Instance.MakeAnchorsPresenceAwareByLabelName(stringArray[1]);
+            if(lastFoundAnchors.Count > 0) SpatialAnchorFinder.Instance.MakeAnchorsPresenceAwareByLabelName(lastFoundAnchors, false);
+            
+            List<OVRSpatialAnchor> anchors = SpatialAnchorFinder.Instance.GetAnchorsBySpatialLabelName(stringArray[1]);
+
+            foreach (OVRSpatialAnchor anchor in anchors)
+            {
+                SpatialLabel spatialAnchor = anchor.GetComponent<SpatialLabel>();
+                if (spatialAnchor.isHidden) spatialAnchor.Hide(false);
+            }
+
+            lastFoundAnchors = anchors;
+            SpatialAnchorFinder.Instance.MakeAnchorsPresenceAwareByLabelName(anchors, true);
         }
 
+        else if (stringArray[0] == "Find" || stringArray[0] == "find" && stringArray[1] == String.Empty)
+        {
+            UICommandThrown.Play("No object named: " + transcription.Replace("Find ", "").Replace("find ", ""));
+            return;
+        }
 
-
-        else if (stringArray[0] == "track" || stringArray[0] == "Track")
+        else if (stringArray[0] == "Scan" || stringArray[0] == "scan")
         {
             florence2Controller.task = Florence2Task.CaptionToPhraseGrounding;
-            multiRequestTranscription.currentTranscription.Replace("Track", "").Replace("track", "");
-            florence2Controller.textPrompt = multiRequestTranscription.currentTranscription;
+            transcription.Replace("Scan", "").Replace("scan", "").Replace("the", "").Replace("a", "");
+            florence2Controller.textPrompt = transcription;
 
             florence2Controller.SendRequest();
 
@@ -124,18 +141,24 @@ public class VoiceActionHandler : MonoBehaviour
             //StartCoroutine(voiceInputController.newHandleFullTranscription(appVoiceExperience));
         }
 
-        
-
-        else if (stringArray[0] == "Change name" || stringArray[0] == "change name")
+        /*
+        else if (stringArray[0] == "Scan" || stringArray[0] == "scan" && stringArray[1] == String.Empty)
         {
-            OVRSpatialAnchor anchor = XRInputManager.Instance.currentlySelectedAnchor;
-            
+            florence2Controller.task = Florence2Task.CaptionToPhraseGrounding;
+            florence2Controller.textPrompt = transcription;
+            florence2Controller.SendRequest();
+            //TODO Add send response later
+            //voiceInputController.newHandleFullTranscription(transcription);
+            //StartCoroutine(voiceInputController.newHandleFullTranscription(appVoiceExperience));
+        }*/
 
-            string transcriptionCopy = multiRequestTranscription.currentTranscription;
 
-            //anchor.GetComponent<SpatialLabel>().ObjectName = "NEWWWWWW NAME";
-            
-            // Split on " to "
+        //TODO Make this with a 3. variable with the name
+        /*
+        else if (stringArray[0] == "Change name" || stringArray[0] == "change name" && stringArray[1] != String.Empty)
+        {
+            OVRSpatialAnchor anchor = SpatialAnchorFinder.Instance.GetAnchorsBySpatialLabelNameFirstFound(stringArray[1]);
+            string transcriptionCopy = transcription;
             string[] parts = transcriptionCopy.Split(new string[] { " to " }, StringSplitOptions.None);
 
             if (parts.Length == 2)
@@ -146,16 +169,56 @@ public class VoiceActionHandler : MonoBehaviour
                 Debug.Log($"Old: {prompt}, New: {newName}");
                 anchor.GetComponent<SpatialLabel>().ObjectName = newName;
             }
+        }*/
+
+        else if (stringArray[0] == "Rename" || stringArray[0] == "rename" /*&& stringArray[1] == String.Empty*/)
+        {
+            OVRSpatialAnchor anchor = XRInputManager.Instance.currentlySelectedAnchor;
+            string transcriptionCopy = transcription;
+            string[] parts = transcriptionCopy.Split(new string[] { " to " }, StringSplitOptions.None);
+
+            if (parts.Length == 2)
+            {
+                string prompt = parts[0].Replace("Rename the", "").Trim();
+                string newName = parts[1].Trim();
+
+                Debug.Log($"Old: {prompt}, New: {newName}");
+                anchor.GetComponent<SpatialLabel>().ObjectName = newName;
+            }
         }
 
+        //TODO Handle already existing
+        /*
+        else if (stringArray[0] == "Rename" || stringArray[0] == "rename" && stringArray[1] != String.Empty) {
+            UICommandThrown.Play("'" + stringArray[1] + "'" + " is aldready defined");
+            return;
+        }*/
+
+
+        else if (stringArray[0] == "Delete" || stringArray[0] == "delete" && stringArray[1] == String.Empty)
+        {
+            OVRSpatialAnchor anchor = XRInputManager.Instance.currentlySelectedAnchor;
+            SpatialLabel spatialLabel = anchor.GetComponent<SpatialLabel>();
+            UICommandThrown.Play("Delete : " + "'" + spatialLabel.ObjectName + "'");
+            spatialLabel.Remove();
+            return;
+        }
+
+
+        // TODO - Make 
+        /*
+        else if (stringArray[0] == "Hide" || stringArray[0] == "hide")
+        {
+            OVRSpatialAnchor anchor = XRInputManager.Instance.currentlySelectedAnchor;
+            SpatialAnchorManager.Instance.HideAnchor(anchor,true);
+        }*/
 
         else if (stringArray[0] == "Hide objects" || stringArray[0] == "hide objects")
         {
             OVRSpatialAnchor anchor = XRInputManager.Instance.currentlySelectedAnchor;
-
-
             SpatialAnchorManager.Instance.HideAllAnchors(true);
         }
+
 
         else if (stringArray[0] == "Show objects" || stringArray[0] == "show objects")
         {
@@ -165,23 +228,16 @@ public class VoiceActionHandler : MonoBehaviour
             SpatialAnchorManager.Instance.HideAllAnchors(false);
         }
 
-
-        else
+        else if (stringArray[0] == String.Empty)
         {
-            UICommandThrown.Play("'" + voicePromptWithFormat.text + "'" + "\n" + " was not recognized");
-
+            UICommandThrown.Play("'" + transcription + "'" + "\n" + " is not a command");
             return;
         }
+
         UICommandThrown.Play(voicePromptWithFormat.text);
 
     }
 
 
 
-
-
-    public void SetTranscription(string transcription)
-    {
-        this.transcription = transcription;
-    }
 }

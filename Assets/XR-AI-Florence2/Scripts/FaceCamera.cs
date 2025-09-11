@@ -16,6 +16,7 @@ public class FaceCamera : MonoBehaviour
 
     private void Update()
     {
+        if(cameraTransform == null) cameraTransform = Camera.main.transform;
         if (projectedOnY)
         {
             transform.forward = Vector3.ProjectOnPlane(reverse?(cameraTransform.position - transform.position).normalized:(transform.position - cameraTransform.position).normalized, Vector3.up); 

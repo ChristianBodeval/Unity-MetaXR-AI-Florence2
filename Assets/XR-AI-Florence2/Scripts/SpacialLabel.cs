@@ -2,35 +2,25 @@
 using TMPro;
 using Meta.XR;
 using Meta.XR.BuildingBlocks;
-using System.Threading.Tasks;
 using NaughtyAttributes;
-
-
-
 
 namespace PresentFutures.XRAI.Spatial
 {
     [RequireComponent(typeof(Collider))]
     public class SpatialLabel : MonoBehaviour
     {
-        public enum AimSource
+        [System.Flags]
+        public enum AimSources
         {
-            MainCamera,
-            LeftController,
-            RightController
+            None = 0,
+            MainCamera = 1 << 0,
+            LeftController = 1 << 1,
+            RightController = 1 << 2
         }
 
-        [Header("UI")]
-        [SerializeField] private string _objectName;     // Exposed to inspector
-        [SerializeField] private TMP_Text text;
-
         [Header("Aim & Remove")]
-        [Tooltip("Where the aiming ray originates from.")]
-        [SerializeField] private AimSource aimFrom = AimSource.MainCamera;
-
-        [Tooltip("Optional. If AimFrom = Left/RightController and this is assigned, we use its position/forward.")]
-        [SerializeField] private Transform leftController;
-        [SerializeField] private Transform rightController;
+        [Tooltip("Pick one or more sources to aim from.")]
+        [EnumFlags][SerializeField] private AimSources aimFrom = AimSources.MainCamera | AimSources.RightController;
 
         [Tooltip("How far the player can target labels for removal.")]
         [SerializeField] private float maxAimDistance = 10f;
@@ -40,21 +30,75 @@ namespace PresentFutures.XRAI.Spatial
 
         [Tooltip("Draw a small gizmo when this label is being aimed at.")]
         [SerializeField] private bool drawAimGizmo = true;
+        private bool _isAimedAt;
+
+        [ShowIf(nameof(NeedsLeftController))] private Transform leftController;
+        [ShowIf(nameof(NeedsRightController))] private Transform rightController;
+
+        [Header("Removal Input")]
+        [Tooltip("Removal button used for Left Controller aim.")]
+        [SerializeField] private OVRInput.Button removeButtonLeft = OVRInput.Button.Three;   // X by default
+        [Tooltip("Removal button used for Right Controller aim.")]
+        [SerializeField] private OVRInput.Button removeButtonRight = OVRInput.Button.Two;    // B by default
+        [Tooltip("Allow mouse left-click to remove while aiming (Editor).")]
+        [SerializeField] private bool allowMouseRemoveInEditor = true;
+        [SerializeField] private bool allowRemovingWithController = false;
+
+
+
+        [Header("Label & Visuals")]
+        [SerializeField] private string _objectName;
+        [SerializeField] private TMP_Text text;
+        public GameObject InteractUI;
+        public GameObject selectedGO;
+
+        [Tooltip("Optional mesh used for presence-aware material swap.")]
+        public MeshRenderer meshRenderer;
+        public Material foundMaterial;
+        public Material normalMaterial;
+
+        [Header("Border")]
+        public Transform borderTransform;
+
+        [SerializeField] private float _xBorderValue;
+        public float XBorderValue
+        {
+            get => _xBorderValue;
+            set
+            {
+                _xBorderValue = value;
+                if (borderTransform)
+                    borderTransform.localScale = new Vector3(_xBorderValue, borderTransform.localScale.y, borderTransform.localScale.z);
+            }
+        }
+
+        [SerializeField] private float _yBorderValue;
+        public float YBorderValue
+        {
+            get => _yBorderValue;
+            set
+            {
+                _yBorderValue = value;
+                if (borderTransform)
+                    borderTransform.localScale = new Vector3(borderTransform.localScale.x, _yBorderValue, borderTransform.localScale.z);
+            }
+        }
 
         private static Camera _mainCam;
-        private Collider _col;
-        private bool _isAimedAt;
-        private OVRSpatialAnchor anchor;
+        private BoxCollider _boxCollider;
+        private OVRSpatialAnchor _anchor;
+
+        // Which source is currently hitting us this frame (for removal button mapping)
+        private AimSources _activeHitSource = AimSources.None;
 
         public OVRSpatialAnchor Anchor
         {
             get
             {
-                if (anchor == null)
-                    anchor = GetComponent<OVRSpatialAnchor>();
-                return anchor;
+                if (_anchor == null) _anchor = GetComponent<OVRSpatialAnchor>();
+                return _anchor;
             }
-            set => anchor = value;
+            set => _anchor = value;
         }
 
         public string ObjectName
@@ -70,110 +114,46 @@ namespace PresentFutures.XRAI.Spatial
             }
         }
 
-        [Header("References")]
-        public GameObject InteractUI;
-
-        public Transform borderTransform;
-
-        [SerializeField] private float _xBorderValue;
-        public float XBorderValue {  
-            get => _xBorderValue; 
-            set { 
-                    _xBorderValue = value;
-                    borderTransform.localScale = new Vector3(_xBorderValue, borderTransform.localScale.y,borderTransform.localScale.z);
-                } 
-            }
-
-
-        [SerializeField] private float _yBorderValue;
-        public float YBorderValue
-        {
-            get => _yBorderValue;
-            set
-            {
-                _yBorderValue = value;
-                borderTransform.localScale = new Vector3(borderTransform.localScale.x, _yBorderValue, borderTransform.localScale.z);
-                Debug.Log("Setting _yBorderValue");
-            }
-        }
-
-
-        
-
+        public bool isHidden;
+        public bool isSelected;
 
         private void Awake()
         {
-            anchor = GetComponent<OVRSpatialAnchor>();
-            _col = GetComponent<Collider>();
-            if (_col == null)
+            _anchor = GetComponent<OVRSpatialAnchor>();
+
+            _boxCollider = GetComponent<BoxCollider>();
+            if (_boxCollider == null)
             {
-                Debug.LogWarning("SpatialLabel requires a Collider for aiming/removal. Adding a BoxCollider by default.", this);
-                _col = gameObject.AddComponent<BoxCollider>();
+                _boxCollider = gameObject.AddComponent<BoxCollider>();
+                Debug.LogWarning("SpatialLabel added a BoxCollider automatically.", this);
             }
 
             if (_mainCam == null) _mainCam = Camera.main;
-
-            // Best-effort auto-find for controller anchors if not assigned
             TryAutoFindControllers();
         }
 
-        private void OnEnable()
-        {
-            anchor = GetComponent<OVRSpatialAnchor>();
-        }
+        private void OnEnable() => _anchor = GetComponent<OVRSpatialAnchor>();
 
         private void OnValidate()
         {
-            if (!string.IsNullOrEmpty(_objectName) && text != null)
-            {
-                text.text = _objectName;
-            }
-
-            borderTransform.localScale = new Vector3(_xBorderValue, _yBorderValue, borderTransform.localScale.z);
+            if (!string.IsNullOrEmpty(_objectName) && text != null) text.text = _objectName;
+            if (borderTransform)
+                borderTransform.localScale = new Vector3(_xBorderValue, _yBorderValue, borderTransform.localScale.z);
         }
-
-        public bool isHidden;
-        
-
-        public void Hide(bool b)
-        {
-            isHidden = b;
-
-            meshRenderer.enabled = !b;
-            text.enabled = !b;
-        }
-
-
-        [Button]
-        public void HideTester()
-        {
-            Hide(!isHidden);
-        }
-
 
         private void Start()
         {
-            // Register with label manager if present
             if (SpatialLabelManager.Instance != null)
-            {
                 SpatialLabelManager.Instance.RegisterLabel(this);
-            }
             else
-            {
                 Debug.LogWarning("SpatialLabelManager instance not found!");
-            }
 
-            // ✅ Ensure the label name is applied on spawn/load
             if (SpatialAnchorManager.Instance != null && Anchor != null)
             {
                 if (SpatialAnchorManager.Instance.TryGetSavedName(Anchor.Uuid, out var savedName))
-                {
                     ObjectName = savedName;
-                }
                 else if (!string.IsNullOrEmpty(_objectName) && text != null)
-                {
                     text.text = _objectName;
-                }
             }
             else if (!string.IsNullOrEmpty(_objectName) && text != null)
             {
@@ -185,145 +165,162 @@ namespace PresentFutures.XRAI.Spatial
 
         private void Update()
         {
-            Ray ray;
-            if (!TryGetAimRay(out ray)) return;
-
             bool wasAimedAt = _isAimedAt;
             _isAimedAt = false;
+            _activeHitSource = AimSources.None;
 
-            if (Physics.Raycast(ray, out RaycastHit hit, maxAimDistance, aimLayerMask, QueryTriggerInteraction.Ignore))
+            // Check all selected sources; pick the closest hit on *this* collider
+            bool hitSomething = TryGetBestHit(out RaycastHit bestHit, out AimSources hitSource);
+
+            if (hitSomething && bestHit.collider == _boxCollider)
             {
-                if (hit.collider == _col)
-                {
-                    _isAimedAt = true;
+                _isAimedAt = true;
+                _activeHitSource = hitSource;
 
-                    if (!wasAimedAt) Debug.Log($"[{name}] Aimed at.");
+#if UNITY_EDITOR
+                if (allowMouseRemoveInEditor && Input.GetMouseButtonDown(0)) Remove();
+#endif
+                if (OVRInput.GetDown(GetRemoveButtonFor(hitSource)) && allowRemovingWithController) Remove();
 
-                    // Remove on B / Button.Two (right controller) or LMB (editor)
-                    if (OVRInput.GetDown(OVRInput.Button.Two))
-                    {
-                        //Remove();
-                    }
-                    if (Input.GetMouseButtonDown(0))
-                    {
-                        Remove();
-                    }
-
-                    XRInputManager.Instance.currentlySelectedAnchor = Anchor;
-                }
-            }
-
-            else
-            {
-
+                if (XRInputManager.Instance != null) XRInputManager.Instance.currentlySelectedAnchor = Anchor;
             }
 
             if (InteractUI) InteractUI.SetActive(_isAimedAt);
+            if (selectedGO) selectedGO.SetActive(_isAimedAt);
 
-            if (wasAimedAt && !_isAimedAt)
-            {
-                Debug.Log($"[{name}] No longer aimed at.");
-            }
+            if (wasAimedAt && !_isAimedAt) Debug.Log($"[{name}] No longer aimed at.");
         }
 
-        /// <summary>
-        /// Compose the aiming ray based on the selected source.
-        /// </summary>
-        private bool TryGetAimRay(out Ray ray)
+        private bool TryGetBestHit(out RaycastHit bestHit, out AimSources hitSource)
         {
-            // Default
-            ray = default;
+            bestHit = default;
+            hitSource = AimSources.None;
+            float bestDist = float.PositiveInfinity;
 
-            switch (aimFrom)
+            // Main Camera
+            if (HasFlag(aimFrom, AimSources.MainCamera))
             {
-                case AimSource.MainCamera:
-                    if (_mainCam == null) _mainCam = Camera.main;
-                    if (_mainCam == null) return false;
-                    ray = new Ray(_mainCam.transform.position, _mainCam.transform.forward);
-                    return true;
-
-                case AimSource.LeftController:
+                var cam = (_mainCam != null) ? _mainCam : Camera.main;
+                if (cam)
+                {
+                    var ray = new Ray(cam.transform.position, cam.transform.forward);
+                    if (Physics.Raycast(ray, out var hit, maxAimDistance, aimLayerMask, QueryTriggerInteraction.Ignore))
                     {
-                        Transform t = ResolveLeftController();
-                        if (!t) return false;
-                        ray = new Ray(t.position, t.forward);
-                        return true;
+                        if (hit.distance < bestDist) { bestDist = hit.distance; bestHit = hit; hitSource = AimSources.MainCamera; }
                     }
-
-                case AimSource.RightController:
-                    {
-                        Transform t = ResolveRightController();
-                        if (!t) return false;
-                        ray = new Ray(t.position, t.forward);
-                        return true;
-                    }
+                }
             }
 
-            return false;
+            // Left Controller
+            if (HasFlag(aimFrom, AimSources.LeftController))
+            {
+                var t = ResolveLeftController();
+                if (t)
+                {
+                    var ray = new Ray(t.position, t.forward);
+                    if (Physics.Raycast(ray, out var hit, maxAimDistance, aimLayerMask, QueryTriggerInteraction.Ignore))
+                    {
+                        if (hit.distance < bestDist) { bestDist = hit.distance; bestHit = hit; hitSource = AimSources.LeftController; }
+                    }
+                }
+            }
+
+            // Right Controller
+            if (HasFlag(aimFrom, AimSources.RightController))
+            {
+                var t = ResolveRightController();
+                if (t)
+                {
+                    var ray = new Ray(t.position, t.forward);
+                    if (Physics.Raycast(ray, out var hit, maxAimDistance, aimLayerMask, QueryTriggerInteraction.Ignore))
+                    {
+                        if (hit.distance < bestDist) { bestDist = hit.distance; bestHit = hit; hitSource = AimSources.RightController; }
+                    }
+                }
+            }
+
+            return hitSource != AimSources.None;
         }
 
-        /// <summary>
-        /// Removes this label from the scene and unregisters it from the manager.
-        /// </summary>
-        public async void Remove()
+        private static bool HasFlag(AimSources value, AimSources flag) => (value & flag) == flag;
+
+        private OVRInput.Button GetRemoveButtonFor(AimSources source)
         {
-            SpatialAnchorManager.Instance.UnsaveAnchor(Anchor);
+            if (source == AimSources.LeftController) return removeButtonLeft;
+            if (source == AimSources.RightController) return removeButtonRight;
+            // If aiming via camera, allow right-hand mapping by default
+            return removeButtonRight;
+        }
+
+        public void Remove()
+        {
+            if (SpatialAnchorManager.Instance != null && Anchor != null)
+                SpatialAnchorManager.Instance.UnsaveAnchor(Anchor);
+
             Disable();
-            Invoke(nameof(MyDestoyer), 2f);
+            Invoke(nameof(MyDestoyer), 0.1f);
         }
 
-        public void MyDestoyer()
-        {
-            Destroy(gameObject);
-        }
+        public void MyDestoyer() => Destroy(gameObject);
 
         public void Disable()
         {
             foreach (Transform child in transform.GetComponentsInChildren<Transform>())
-            {
                 child.gameObject.SetActive(false);
-            }
         }
 
         public void Enable()
         {
             foreach (Transform child in transform.GetComponentsInChildren<Transform>())
-            {
                 child.gameObject.SetActive(true);
-            }
         }
 
         private void OnDestroy()
         {
-            if (SpatialAnchorManager.Instance != null)
-            {
-                SpatialAnchorManager.Instance.UnsaveAnchor(anchor);
-            }
+            if (SpatialAnchorManager.Instance != null && _anchor != null)
+                SpatialAnchorManager.Instance.UnsaveAnchor(_anchor);
         }
 
         private void OnDrawGizmos()
         {
             if (!drawAimGizmo || !_isAimedAt) return;
-
             Gizmos.matrix = transform.localToWorldMatrix;
             Gizmos.DrawWireSphere(Vector3.zero, 0.08f);
         }
 
-        // -------------------- Helpers --------------------
+        // -------- Selection / Visibility --------
+        public void Hide(bool b)
+        {
+            isHidden = b;
+            if (meshRenderer) meshRenderer.enabled = !b;
+            if (text) text.enabled = !b;
+        }
 
+        public void Select(bool b)
+        {
+            isSelected = b;
+            if (selectedGO) selectedGO.SetActive(b);
+        }
+
+        [Button] public void SelectTester() => Select(!isSelected);
+        [Button] public void HideTester() => Hide(!isHidden);
+
+        public void MakePressenceAware(bool isFound)
+        {
+            if (!meshRenderer) return;
+            if (isFound && foundMaterial != null) meshRenderer.material = foundMaterial;
+            else if (normalMaterial != null) meshRenderer.material = normalMaterial;
+        }
+
+        [Button] public void Tester() => MakePressenceAware(true);
+
+        // -------- Helpers --------
         private void TryAutoFindControllers()
         {
-            // If user didn’t assign, try common anchor names under OVRCameraRig
             if (!leftController)
-            {
-                leftController = FindTransformByNames(
-                    "LeftHandAnchor", "LeftControllerAnchor", "OVRLeftControllerAnchor", "LeftHand", "LeftController");
-            }
+                leftController = FindTransformByNames("LeftHandAnchor", "LeftControllerAnchor", "OVRLeftControllerAnchor", "LeftHand", "LeftController");
             if (!rightController)
-            {
-                rightController = FindTransformByNames(
-                    "RightHandAnchor", "RightControllerAnchor", "OVRRightControllerAnchor", "RightHand", "RightController");
-            }
+                rightController = FindTransformByNames("RightHandAnchor", "RightControllerAnchor", "OVRRightControllerAnchor", "RightHand", "RightController");
         }
 
         private Transform ResolveLeftController()
@@ -349,25 +346,9 @@ namespace PresentFutures.XRAI.Spatial
             }
             return null;
         }
-        public MeshRenderer meshRenderer;
-        public Material foundMaterial;
-        public Material normalMaterial;
 
-        public void MakePressenceAware(bool isFound)
-        {
-            if (isFound)
-            {
-                meshRenderer.material = foundMaterial;
-            }
-            else
-            {
-                meshRenderer.material = normalMaterial;
-            }
-        }
-        [Button]
-        public void Tester()
-        {
-            MakePressenceAware(true);
-        }
+        // ----- NaughtyAttributes conditions -----
+        private bool NeedsLeftController() => HasFlag(aimFrom, AimSources.LeftController);
+        private bool NeedsRightController() => HasFlag(aimFrom, AimSources.RightController);
     }
 }

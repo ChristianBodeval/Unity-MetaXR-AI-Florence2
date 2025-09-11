@@ -33,10 +33,16 @@ public class SpatialAnchorManager : MonoBehaviour
     private Canvas canvas;
     private TextMeshProUGUI uuidText;
     private TextMeshProUGUI savedStatusText;
-    private readonly List<OVRSpatialAnchor> anchors = new();
+    private List<OVRSpatialAnchor> anchors 
+    {
+        get
+        {
+            return SpatialAnchorFinder.Instance.trackedAnchors;
+        }
+    }
+
+
     private OVRSpatialAnchor lastCreatedAnchor;
-    private AnchorLoader anchorLoader;
-    public Florence2Controller florence2Controller;
 
     // Keep a map of UUID -> saved name (from PlayerPrefs)
     private readonly Dictionary<Guid, string> _savedNames = new();
@@ -68,8 +74,6 @@ public class SpatialAnchorManager : MonoBehaviour
         }
         Instance = this;
         // DontDestroyOnLoad(gameObject); // uncomment if you want persistence
-
-        anchorLoader = GetComponent<AnchorLoader>();
     }
 
     private void Update()
@@ -243,6 +247,12 @@ public class SpatialAnchorManager : MonoBehaviour
             }
         });
     }
+
+    public void HideAnchor(OVRSpatialAnchor anchor, bool b)
+    {
+        anchor.GetComponent<SpatialLabel>().Hide(b);
+    }
+
 
 
     public void HideAllAnchors(bool b)
