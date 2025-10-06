@@ -3,7 +3,18 @@
 --- !u!78 &1
 TagManager:
   serializedVersion: 3
-  tags: []
+  tags:
+  - QDSUIPrimaryButton
+  - QDSUIAccentColor
+  - QDSUITooltip
+  - QDSUITextInvertedColor
+  - QDSUIToggleBorderlessButton
+  - QDSUITextSecondaryInvertedColor
+  - QDSUIIcon
+  - QDSUITextSecondaryColor
+  - QDSUIBackplateGradient
+  - QDSUIToggleButton
+  - SpatialLabelCollider
   layers:
   - Default
   - TransparentFX
@@ -12,7 +23,7 @@ TagManager:
   - Water
   - UI
   - Invisible
-  - 
+  - SpatialLabelCollider
   - 
   - 
   - 

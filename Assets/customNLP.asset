@@ -75,6 +75,15 @@ MonoBehaviour:
       - keyword: Fork
         synonyms:
         - fork
+      - keyword: Please scan painting
+        synonyms:
+        - please scan painting
+      - keyword: Please scan scan image
+        synonyms:
+        - please scan scan image
+      - keyword: Scan
+        synonyms:
+        - scan
       - keyword: Scan blue ball
         synonyms:
         - scan blue ball
@@ -87,18 +96,60 @@ MonoBehaviour:
       - keyword: Scan blue portal
         synonyms:
         - scan blue portal
+      - keyword: Scan clock
+        synonyms:
+        - scan clock
+      - keyword: Scan key
+        synonyms:
+        - scan key
+      - keyword: Scan pending
+        synonyms:
+        - scan pending
+      - keyword: Scan picture
+        synonyms:
+        - scan picture
       - keyword: all box
         synonyms:
         - all box
       - keyword: almonds
         synonyms:
         - almonds
+      - keyword: angle
+        synonyms:
+        - angle
+      - keyword: apple
+        synonyms:
+        - apple
       - keyword: backpack
         synonyms:
         - backpack
       - keyword: bed
         synonyms:
         - bed
+      - keyword: black TV stand with drawers and white boxes
+        synonyms:
+        - black tv stand with drawers and white boxes
+      - keyword: black dresser
+        synonyms:
+        - black dresser
+      - keyword: black dresser with drawers and boxes
+        synonyms:
+        - black dresser with drawers and boxes
+      - keyword: black dresser with drawers and file cabinets
+        synonyms:
+        - black dresser with drawers and file cabinets
+      - keyword: black dresser with file cabinets and large flat screen TV
+        synonyms:
+        - black dresser with file cabinets and large flat screen tv
+      - keyword: black dresser with white boxes on top of it
+        synonyms:
+        - black dresser with white boxes on top of it
+      - keyword: black entertainment center
+        synonyms:
+        - black entertainment center
+      - keyword: black floor mat
+        synonyms:
+        - black floor mat
       - keyword: black headset
         synonyms:
         - black headset
@@ -108,6 +159,12 @@ MonoBehaviour:
       - keyword: black keyboard
         synonyms:
         - black keyboard
+      - keyword: black laptop keyboard
+        synonyms:
+        - black laptop keyboard
+      - keyword: black water bottle
+        synonyms:
+        - black water bottle
       - keyword: blue bottle
         synonyms:
         - blue bottle
@@ -120,6 +177,12 @@ MonoBehaviour:
       - keyword: blue button
         synonyms:
         - blue button
+      - keyword: blue flower
+        synonyms:
+        - blue flower
+      - keyword: blue flower
+        synonyms:
+        - blue flower
       - keyword: blue paddle
         synonyms:
         - blue paddle
@@ -138,6 +201,84 @@ MonoBehaviour:
       - keyword: book
         synonyms:
         - book
+      - keyword: bookcase
+        synonyms:
+        - bookcase
+      - keyword: booksheetry
+        synonyms:
+        - booksheetry
+      - keyword: booksheetry
+        synonyms:
+        - booksheetry
+      - keyword: booksheets
+        synonyms:
+        - booksheets
+      - keyword: bookshef
+        synonyms:
+        - bookshef
+      - keyword: bookshefs
+        synonyms:
+        - bookshefs
+      - keyword: booksheled books
+        synonyms:
+        - booksheled books
+      - keyword: bookshelf
+        synonyms:
+        - bookshelf
+      - keyword: bookshelled books
+        synonyms:
+        - bookshelled books
+      - keyword: bookshelled books
+        synonyms:
+        - bookshelled books
+      - keyword: bookshelled books
+        synonyms:
+        - bookshelled books
+      - keyword: bookshelled books
+        synonyms:
+        - bookshelled books
+      - keyword: bookshelled books
+        synonyms:
+        - bookshelled books
+      - keyword: bookshelled books
+        synonyms:
+        - bookshelled books
+      - keyword: bookshelled books on shelf
+        synonyms:
+        - bookshelled books on shelf
+      - keyword: bookshelled items
+        synonyms:
+        - bookshelled items
+      - keyword: bookshelled up books on bookshelf
+        synonyms:
+        - bookshelled up books on bookshelf
+      - keyword: bookshelledlled book
+        synonyms:
+        - bookshelledlled book
+      - keyword: bookshelledlled books
+        synonyms:
+        - bookshelledlled books
+      - keyword: bookshelledlledlledgable books on bookshelf
+        synonyms:
+        - bookshelledlledlledgable books on bookshelf
+      - keyword: bookshelledlledlledorie book
+        synonyms:
+        - bookshelledlledlledorie book
+      - keyword: booksherow
+        synonyms:
+        - booksherow
+      - keyword: booksherows
+        synonyms:
+        - booksherows
+      - keyword: booksherows
+        synonyms:
+        - booksherows
+      - keyword: booksheshelf
+        synonyms:
+        - booksheshelf
+      - keyword: booksheves
+        synonyms:
+        - booksheves
       - keyword: bottle
         synonyms:
         - bottle
@@ -147,6 +288,15 @@ MonoBehaviour:
       - keyword: box
         synonyms:
         - box
+      - keyword: bracelet
+        synonyms:
+        - bracelet
+      - keyword: bracelet
+        synonyms:
+        - bracelet
+      - keyword: bread
+        synonyms:
+        - bread
       - keyword: bucket
         synonyms:
         - bucket
@@ -168,12 +318,24 @@ MonoBehaviour:
       - keyword: cabinetry
         synonyms:
         - cabinetry
+      - keyword: candle
+        synonyms:
+        - candle
+      - keyword: candle
+        synonyms:
+        - candle
       - keyword: carpet
         synonyms:
         - carpet
       - keyword: chair
         synonyms:
         - chair
+      - keyword: clock
+        synonyms:
+        - clock
+      - keyword: clock
+        synonyms:
+        - clock
       - keyword: coffee cup
         synonyms:
         - coffee cup
@@ -207,6 +369,12 @@ MonoBehaviour:
       - keyword: computer mouse
         synonyms:
         - computer mouse
+      - keyword: converter
+        synonyms:
+        - converter
+      - keyword: converter
+        synonyms:
+        - converter
       - keyword: countertop
         synonyms:
         - countertop
@@ -231,24 +399,78 @@ MonoBehaviour:
       - keyword: dirty kitchen counter
         synonyms:
         - dirty kitchen counter
+      - keyword: dirty kitchen countertop
+        synonyms:
+        - dirty kitchen countertop
+      - keyword: dirty kitchen sink
+        synonyms:
+        - dirty kitchen sink
       - keyword: door
         synonyms:
         - door
       - keyword: faucet
         synonyms:
         - faucet
+      - keyword: footwear
+        synonyms:
+        - footwear
       - keyword: gas stove
         synonyms:
         - gas stove
+      - keyword: glass cup
+        synonyms:
+        - glass cup
       - keyword: green salt box
         synonyms:
         - green salt box
       - keyword: green salt box
         synonyms:
         - green salt box
+      - keyword: hand
+        synonyms:
+        - hand
+      - keyword: hand holding black object with yellow strap
+        synonyms:
+        - hand holding black object with yellow strap
+      - keyword: hand holding white coffee mug
+        synonyms:
+        - hand holding white coffee mug
+      - keyword: hand holding white cord in front of chest of drawers
+        synonyms:
+        - hand holding white cord in front of chest of drawers
+      - keyword: hand holding white object in dark room
+        synonyms:
+        - hand holding white object in dark room
+      - keyword: hand holding white object with wire coming out of it
+        synonyms:
+        - hand holding white object with wire coming out of it
+      - keyword: hand holding wire
+        synonyms:
+        - hand holding wire
+      - keyword: hand typing on laptop keyboard
+        synonyms:
+        - hand typing on laptop keyboard
+      - keyword: headphones
+        synonyms:
+        - headphones
       - keyword: house
         synonyms:
         - house
+      - keyword: houseplant
+        synonyms:
+        - houseplant
+      - keyword: human
+        synonyms:
+        - human
+      - keyword: human foot
+        synonyms:
+        - human foot
+      - keyword: key
+        synonyms:
+        - key
+      - keyword: keyboard
+        synonyms:
+        - keyboard
       - keyword: kitchen counter with dishes and utensils
         synonyms:
         - kitchen counter with dishes and utensils
@@ -267,6 +489,33 @@ MonoBehaviour:
       - keyword: laptop
         synonyms:
         - laptop
+      - keyword: laptop computer
+        synonyms:
+        - laptop computer
+      - keyword: laptop computer on desk with black keyboard and red screen
+        synonyms:
+        - laptop computer on desk with black keyboard and red screen
+      - keyword: laptop computer with music editing software on screen
+        synonyms:
+        - laptop computer with music editing software on screen
+      - keyword: laptop computer with red and yellow lines on screen
+        synonyms:
+        - laptop computer with red and yellow lines on screen
+      - keyword: laptop keyboard
+        synonyms:
+        - laptop keyboard
+      - keyword: laptop on desk with colorful lines on screen
+        synonyms:
+        - laptop on desk with colorful lines on screen
+      - keyword: laptop on desk with remote control
+        synonyms:
+        - laptop on desk with remote control
+      - keyword: living room
+        synonyms:
+        - living room
+      - keyword: living room
+        synonyms:
+        - living room
       - keyword: loudspeaker
         synonyms:
         - loudspeaker
@@ -294,6 +543,9 @@ MonoBehaviour:
       - keyword: notch
         synonyms:
         - notch
+      - keyword: object
+        synonyms:
+        - object
       - keyword: oven
         synonyms:
         - oven
@@ -339,6 +591,9 @@ MonoBehaviour:
       - keyword: rainbow cup
         synonyms:
         - rainbow cup
+      - keyword: red book
+        synonyms:
+        - red book
       - keyword: remote control
         synonyms:
         - remote control
@@ -375,6 +630,9 @@ MonoBehaviour:
       - keyword: stool
         synonyms:
         - stool
+      - keyword: table
+        synonyms:
+        - table
       - keyword: tea
         synonyms:
         - tea
@@ -390,6 +648,42 @@ MonoBehaviour:
       - keyword: tool
         synonyms:
         - tool
+      - keyword: vase
+        synonyms:
+        - vase
+      - keyword: water bottle
+        synonyms:
+        - water bottle
+      - keyword: wheel
+        synonyms:
+        - wheel
+      - keyword: wheel
+        synonyms:
+        - wheel
+      - keyword: wheel
+        synonyms:
+        - wheel
+      - keyword: white bowl
+        synonyms:
+        - white bowl
+      - keyword: white bowl
+        synonyms:
+        - white bowl
+      - keyword: white ceramic bowls
+        synonyms:
+        - white ceramic bowls
+      - keyword: white ceramic plates
+        synonyms:
+        - white ceramic plates
+      - keyword: white door
+        synonyms:
+        - white door
+      - keyword: white plastic bucket
+        synonyms:
+        - white plastic bucket
+      - keyword: white plastic storage container
+        synonyms:
+        - white plastic storage container
       - keyword: white venetian blinds
         synonyms:
         - white venetian blinds
@@ -414,6 +708,9 @@ MonoBehaviour:
       - keyword: wooden shelf
         synonyms:
         - wooden shelf
+      - keyword: wooden shelving unit with dishes and cooking utensils
+        synonyms:
+        - wooden shelving unit with dishes and cooking utensils
       - keyword: wooden shelving unit with dishes and kitchen utensils
         synonyms:
         - wooden shelving unit with dishes and kitchen utensils

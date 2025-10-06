@@ -101,32 +101,34 @@ public class VoiceActionHandler : MonoBehaviour
         if (stringArray[0] == "add note")
         {
             florenceSettingText.text = "Adding a note to " + stringArray[1] + "Transcript: " + "//TODO ADD HERE";
+            OVRSpatialAnchor anchor =  XRInputManager.Instance.currentlySelectedAnchor;
+            SpatialLabel spatialLabel = anchor.GetComponent<SpatialLabel>();
+            UICommandThrown.Play("Adding note to : " + "'" + spatialLabel.ObjectName + "'");
+            spatialLabel.NoteEnable(true);
+
             Debug.LogWarning("Adding a note to" + stringArray[1] + "Transcript: " + "//TODO ADD HERE" );
-        }
-
-        else if (stringArray[0] == "Find" || stringArray[0] == "find") {
-            if(lastFoundAnchors.Count > 0) SpatialAnchorFinder.Instance.MakeAnchorsPresenceAwareByLabelName(lastFoundAnchors, false);
-            
-            List<OVRSpatialAnchor> anchors = SpatialAnchorFinder.Instance.GetAnchorsBySpatialLabelName(stringArray[1]);
-
-            foreach (OVRSpatialAnchor anchor in anchors)
-            {
-                SpatialLabel spatialAnchor = anchor.GetComponent<SpatialLabel>();
-                if (spatialAnchor.isHidden) spatialAnchor.Hide(false);
-            }
-
-            lastFoundAnchors = anchors;
-            SpatialAnchorFinder.Instance.MakeAnchorsPresenceAwareByLabelName(anchors, true);
-        }
-
-        else if (stringArray[0] == "Find" || stringArray[0] == "find" && stringArray[1] == String.Empty)
-        {
-            UICommandThrown.Play("No object named: " + transcription.Replace("Find ", "").Replace("find ", ""));
-            return;
         }
 
         else if (stringArray[0] == "Scan" || stringArray[0] == "scan")
         {
+            Debug.Log("Scanning");
+            florence2Controller.task = Florence2Task.CaptionToPhraseGrounding;
+            transcription.Replace("Scan", "").Replace("scan", "").Replace("the", "").Replace("a", "");
+            florence2Controller.textPrompt = transcription;
+
+            florence2Controller.SendRequest();
+
+            Debug.Log("Current trans: " + transcription);
+
+            Debug.Log("This is the trans: " + transcription);
+            //TODO Add send response later
+            //voiceInputController.newHandleFullTranscription(transcription);
+            //StartCoroutine(voiceInputController.newHandleFullTranscription(appVoiceExperience));
+        }
+
+        else if (stringArray[0] == "Track" || stringArray[0] == "track")
+        {
+            Debug.Log("Tracking");
             florence2Controller.task = Florence2Task.CaptionToPhraseGrounding;
             transcription.Replace("Scan", "").Replace("scan", "").Replace("the", "").Replace("a", "");
             florence2Controller.textPrompt = transcription;
@@ -151,6 +153,29 @@ public class VoiceActionHandler : MonoBehaviour
             //voiceInputController.newHandleFullTranscription(transcription);
             //StartCoroutine(voiceInputController.newHandleFullTranscription(appVoiceExperience));
         }*/
+
+        else if (stringArray[0] == "Find" || stringArray[0] == "find") {
+            if(lastFoundAnchors.Count > 0) SpatialAnchorFinder.Instance.MakeAnchorsPresenceAwareByLabelName(lastFoundAnchors, false);
+            
+            List<OVRSpatialAnchor> anchors = SpatialAnchorFinder.Instance.GetAnchorsBySpatialLabelName(stringArray[1]);
+
+            foreach (OVRSpatialAnchor anchor in anchors)
+            {
+                SpatialLabel spatialAnchor = anchor.GetComponent<SpatialLabel>();
+                if (spatialAnchor.isHidden) spatialAnchor.Hide(false);
+            }
+
+            lastFoundAnchors = anchors;
+            SpatialAnchorFinder.Instance.MakeAnchorsPresenceAwareByLabelName(anchors, true);
+        }
+
+        else if (stringArray[0] == "Find" || stringArray[0] == "find" && stringArray[1] == String.Empty)
+        {
+            UICommandThrown.Play("No object named: " + transcription.Replace("Find ", "").Replace("find ", ""));
+            return;
+        }
+
+        
 
 
         //TODO Make this with a 3. variable with the name
@@ -230,7 +255,12 @@ public class VoiceActionHandler : MonoBehaviour
 
         else if (stringArray[0] == String.Empty)
         {
-            UICommandThrown.Play("'" + transcription + "'" + "\n" + " is not a command");
+            florence2Controller.task = Florence2Task.CaptionToPhraseGrounding;
+            transcription.Replace("Scan", "").Replace("scan", "").Replace("the", "").Replace("a", "");
+            florence2Controller.textPrompt = transcription;
+            florence2Controller.SendRequest();
+
+            UICommandThrown.Play(transcription);
             return;
         }
 

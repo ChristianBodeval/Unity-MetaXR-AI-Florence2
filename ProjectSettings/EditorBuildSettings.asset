@@ -6,7 +6,7 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 0
-    path: Assets/Scenes/GroqSamples.unity
+    path: Assets/XR-AI-Florence2/Scenes/TTSScene.unity
     guid: 99c9720ab356a0642a771bea13969a05
   - enabled: 0
     path: Assets/Scenes/DepthTesting.unity
@@ -24,6 +24,15 @@ EditorBuildSettings:
   - enabled: 0
     path: "Assets/Samples/Meta XR Interaction \u200BSDK/77.0.0/Example Scenes/UISetExamples.unity"
     guid: 07e3686372a704147b219707ee3c6f62
+  - enabled: 0
+    path: "Assets/Samples/Meta XR Interaction \u200BSDK/77.0.0/Example Scenes/DistanceGrabExamples.unity"
+    guid: e1c1f1d4144ac8849ac1833b99bdfd23
+  - enabled: 0
+    path: Assets/Samples/Meta XR Core SDK/77.0.0/Sample Scenes/HandMicrogestures.unity
+    guid: 1b1c5974df2e1dd4c8c6e52c9db592eb
+  - enabled: 0
+    path: Assets/Samples/Meta XR Interaction SDK Essentials/77.0.0/UnityXR Integration/Scenes/UnityXRComprehensiveRigExample.unity
+    guid: 1c3839a1070e4a14ab46e590c49bec68
   m_configObjects:
     Unity.XR.Oculus.Settings: {fileID: 11400000, guid: 48708d634d764904d95a533bfc151d50, type: 2}
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}

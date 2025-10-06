@@ -50,7 +50,8 @@ public class SelectionArrow : MonoBehaviour
 
     private void Update()
     {
-        ApplyPlacement();
+
+        //ApplyPlacement();
     }
 
     public bool useDynamicPlacement;
