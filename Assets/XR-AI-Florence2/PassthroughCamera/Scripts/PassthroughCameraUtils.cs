@@ -88,7 +88,7 @@ namespace PassthroughCameraSamples
         /// in pixels. The resolution value is the maximum resolution available for the camera.
         /// </summary>
         /// <param name="cameraEye">The passthrough camera</param>
-        public static PassthroughCameraIntrinsics GetCameraIntrinsics(PassthroughCameraEye cameraEye)
+        public static PassthroughCameraIntrinsicsStruct GetCameraIntrinsics(PassthroughCameraEye cameraEye)
         {
             var cameraCharacteristics = GetCameraCharacteristics(cameraEye);
             var intrinsicsArr = GetCameraValueByKey<float[]>(cameraCharacteristics, "LENS_INTRINSIC_CALIBRATION");
@@ -98,7 +98,7 @@ namespace PassthroughCameraSamples
             // This is a Rect of 4 elements: [bottom, left, right, top] with (0,0) at top-left corner.
             using var sensorSize = GetCameraValueByKey<AndroidJavaObject>(cameraCharacteristics, "SENSOR_INFO_PRE_CORRECTION_ACTIVE_ARRAY_SIZE");
 
-            return new PassthroughCameraIntrinsics
+            return new PassthroughCameraIntrinsicsStruct
             {
                 FocalLength = new Vector2(intrinsicsArr[0], intrinsicsArr[1]),
                 PrincipalPoint = new Vector2(intrinsicsArr[2], intrinsicsArr[3]),
@@ -350,7 +350,7 @@ namespace PassthroughCameraSamples
     /// <summary>
     /// Contains camera intrinsics, which describe physical characteristics of a passthrough camera
     /// </summary>
-    public struct PassthroughCameraIntrinsics
+    public struct PassthroughCameraIntrinsicsStruct
     {
         /// <summary>
         /// The focal length in pixels

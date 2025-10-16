@@ -1,0 +1,474 @@
+﻿@startuml
+left to right direction
+
+hide MonoBehaviour
+hide ScriptableObject
+hide GameObject
+hide Transform
+hide RectTransform
+hide Camera
+hide Material
+hide Texture
+hide Texture2D
+hide Collider
+hide MeshRenderer
+hide RawImage
+hide Image
+hide TMP_Text
+hide UnityEvent
+hide Sprite
+hide LayoutElement
+hide Color
+hide Vector3
+hide List
+hide List`1
+
+left to right direction
+
+
+class AnchorLoader {
+    + LoadAnchorsByUuid() : void
+}
+MonoBehaviour <|-- AnchorLoader
+class AnchorPlacement {
+}
+MonoBehaviour <|-- AnchorPlacement
+AnchorPlacement --> "anchorPrefab" GameObject
+class ApiConfig {
+    + apiKey : string
+}
+ScriptableObject <|-- ApiConfig
+class CameraViewPyramid {
+    + height : float = 5f
+    + matchFarClip : bool = false
+    + useImageAspect : bool = true
+    + imageAspect : float
+    + centerCrop : bool = true
+    + liveUpdate : bool = true
+    + drawGizmo : bool = true
+    + Rebuild() : void
+}
+enum EyeMode {
+    Mono,
+    Left,
+    Right,
+    Center,
+}
+MonoBehaviour <|-- CameraViewPyramid
+CameraViewPyramid --> "targetCamera" Camera
+CameraViewPyramid o-> "eye" EyeMode
+CameraViewPyramid --> "uiSource" RawImage
+CameraViewPyramid --> "imageSource" Texture
+CameraViewPyramid --> "cameraToWorldCameraCanvas" CameraToWorldCameraCanvas
+CameraViewPyramid +-- EyeMode
+class CocoSegmentationBridge {
+    + huggingFaceApiKey : string = ""
+    + <<async>> GetMaskAtPointAsync(image:Texture2D, normalizedUV:Vector2) : Task<Texture2D>
+    + DrawMaskOverlay(maskTex:Texture2D, target:RawImage) : void
+}
+MonoBehaviour <|-- CocoSegmentationBridge
+CocoSegmentationBridge --> "debugMaskOutput" RawImage
+CocoSegmentationBridge o-> "maskColor" Color
+class ConstantRotation {
+}
+MonoBehaviour <|-- ConstantRotation
+class ControllerIconImage {
+    + resourcesFolder : string = "ControllerInputIcon"
+    + selectedSpriteName : string
+    + RefreshSprites() : void
+    + ApplySelected() : void
+}
+MonoBehaviour <|-- ControllerIconImage
+ControllerIconImage --> "targetImage" Image
+class FaceCamera {
+}
+MonoBehaviour <|-- FaceCamera
+FaceCamera --> "cameraTransform" Transform
+class FaceCameraOnlyXAxis {
+}
+MonoBehaviour <|-- FaceCameraOnlyXAxis
+enum Florence2Task {
+    Caption,
+    DetailedCaption,
+    MoreDetailedCaption,
+    ObjectDetection,
+    DenseRegionCaption,
+    RegionProposal,
+    CaptionToPhraseGrounding,
+    ReferringExpressionSegmentation,
+    RegionToSegmentation,
+    OpenVocabularyDetection,
+    RegionToCategory,
+    RegionToDescription,
+    OCR,
+    OCRWithRegion,
+}
+class DetectionResult {
+    + Label : string
+}
+class Florence2Response {
+    + Id : string <<get>> <<set>>
+    + OverlayPngBase64 : string <<get>> <<set>>
+}
+class Choice {
+    + Index : int <<get>> <<set>>
+}
+class Message {
+    + Role : string <<get>> <<set>>
+    + Content : string <<get>> <<set>>
+}
+class Entities {
+}
+class Usage {
+    + CompletionTokens : int <<get>> <<set>>
+    + PromptTokens : int <<get>> <<set>>
+    + TotalTokens : int <<get>> <<set>>
+}
+class Florence2Controller {
+    + textPrompt : string
+    + multiRequestMode : bool = true
+    + SendRequest() : void
+    + {static} ConvertToTexture2D(texture:Texture) : Texture2D
+    + {static} EncodeTextureToJPG(texture:Texture, quality:int) : byte[]
+}
+class "List`1"<T> {
+}
+enum FlorenceAnchorMode {
+    BoundingBox2D,
+    SpatialLabel3D,
+    Both,
+}
+class PendingRequest {
+    + RequestId : string
+}
+DetectionResult --> "BoundingBox" Rect
+Florence2Response --> "Choices<Choice>" "List`1"
+Florence2Response --> "Usage" Usage
+Choice --> "Message" Message
+Message --> "Entities" Entities
+Entities --> "Bboxes<List<float>>" "List`1"
+Entities --> "Labels<string>" "List`1"
+MonoBehaviour <|-- Florence2Controller
+Florence2Controller --> "captionTextField" TMP_Text
+Florence2Controller --> "sourceTexture" RawImage
+Florence2Controller --> "task" Florence2Task
+Florence2Controller o-> "regionOfInterest" Rect
+Florence2Controller --> "resultImage" RawImage
+Florence2Controller --> "boundingBoxContainer" RectTransform
+Florence2Controller --> "boundingBoxPrefab" GameObject
+Florence2Controller --> "loadingIcon" GameObject
+Florence2Controller o-> "anchorMode" FlorenceAnchorMode
+Florence2Controller --> "spatialAnchorPrefab" GameObject
+Florence2Controller --> "environmentRaycastManager" EnvironmentRaycastManager
+Florence2Controller --> "spatialAnchorSpawnerBuildingBlock" SpatialAnchorSpawnerBuildingBlock
+Florence2Controller --> "spatialAnchorCoreBuildingBlock" SpatialAnchorCoreBuildingBlock
+Florence2Controller --> "currentCameraPosition" Pose
+Florence2Controller --> "cameraViewPyramidPrefab" GameObject
+Florence2Controller +-- FlorenceAnchorMode
+Florence2Controller +-- PendingRequest
+PendingRequest --> "CameraPose" Pose
+PendingRequest --> "CapturedTexture" Texture2D
+PendingRequest o-> "Results<DetectionResult>" "List`1"
+PendingRequest --> "cameraViewPyramid" GameObject
+class LineReveal {
+    + speed : float = 5f
+}
+MonoBehaviour <|-- LineReveal
+class OVRInputPromptUI {
+}
+struct InputMap {
+    + valid : bool
+    + humanName : string
+}
+MonoBehaviour <|-- OVRInputPromptUI
+OVRInputPromptUI --> "onPerformed" UnityEvent
+OVRInputPromptUI +-- InputMap
+class PassthroughCameraOffline <<static>> {
+    + {static} CaptureSnapshot(eye:PassthroughCameraEye, savedFrame:Texture2D, timestampNs:long) : SavedSnapshot
+    + {static} FromSaved(eye:PassthroughCameraEye, cameraPoseWorld:Pose, intrinsics:PassthroughCameraIntrinsicsStruct, savedFrame:Texture2D, timestampNs:long) : SavedSnapshot
+    + {static} ScreenPointToRayInCamera(intrinsics:PassthroughCameraIntrinsicsStruct, pixel:Vector2Int) : Ray
+    + {static} NormalizedToRayInCamera(intrinsics:PassthroughCameraIntrinsicsStruct, uv01:Vector2) : Ray
+    + {static} CameraRayToWorld(snap:SavedSnapshot, rayInCamera:Ray) : Ray
+    + {static} ScreenPointToRayInWorld(snap:SavedSnapshot, pixel:Vector2Int) : Ray
+    + {static} NormalizedToRayInWorld(snap:SavedSnapshot, uv01:Vector2) : Ray
+    + {static} UV01ToPixel(snap:SavedSnapshot, uv01:Vector2) : Vector2Int
+}
+struct SavedSnapshot {
+    + TimestampNs : long
+    + HasFrame : bool <<get>>
+}
+PassthroughCameraOffline +-- SavedSnapshot
+SavedSnapshot --> "Eye" PassthroughCameraEye
+SavedSnapshot --> "CameraPoseWorld" Pose
+SavedSnapshot --> "Intrinsics" PassthroughCameraIntrinsicsStruct
+SavedSnapshot --> "Resolution" Vector2Int
+SavedSnapshot --> "FrameRGBA" Texture2D
+class SpacialAnchorSpawner {
+}
+MonoBehaviour <|-- SpacialAnchorSpawner
+class SpatialLabel {
+    + isHovered : bool <<get>>
+    + isHidden : bool
+    + isSelected : bool
+    + isNoteEnabled : bool <<get>> <<set>>
+    + ObjectName : string <<get>> <<set>>
+    + XBorderValue : float <<get>> <<set>>
+    + YBorderValue : float <<get>> <<set>>
+    + SetIsAimable(b:bool) : void
+    + SetSelectedArrow(b:bool) : void
+    + Remove() : void
+    + MyDestoyer() : void
+    + Disable() : void
+    + Enable() : void
+    + NoteEnableTester() : void
+    + NoteEnable(b:bool) : void
+    + Hide(b:bool) : void
+    + Select(b:bool) : void
+    + SelectTester() : void
+    + HideTester() : void
+    + MakePressenceAware(isFound:bool) : void
+    + Tester() : void
+}
+enum AimSources {
+    None= 0,
+    MainCamera= 1 << 0,
+    LeftController= 1 << 1,
+    RightController= 1 << 2,
+}
+class "UnityEvent`1"<T> {
+}
+MonoBehaviour <|-- SpatialLabel
+SpatialLabel o-> "OnHoverEntered" UnityEvent
+SpatialLabel o-> "OnHoverExited" UnityEvent
+SpatialLabel o-> "OnSelected" UnityEvent
+SpatialLabel o-> "OnUnselected" UnityEvent
+SpatialLabel o-> "OnHoverChanged<bool>" "UnityEvent`1"
+SpatialLabel o-> "OnSelectedChanged<bool>" "UnityEvent`1"
+SpatialLabel --> "selectedGO" GameObject
+SpatialLabel --> "meshRenderer" MeshRenderer
+SpatialLabel --> "foundMaterial" Material
+SpatialLabel --> "normalMaterial" Material
+SpatialLabel --> "note" GameObject
+SpatialLabel --> "openNoteUI" GameObject
+SpatialLabel --> "borderTransform" Transform
+SpatialLabel o-> "OnAimedAt" UnityEvent
+SpatialLabel o-> "OnNotAimedAt" UnityEvent
+SpatialLabel o-> "OnClick" UnityEvent
+SpatialLabel --> "Anchor" OVRSpatialAnchor
+SpatialLabel --> "aimPointerCollider" Collider
+SpatialLabel --> "OpenNoteUIGO" GameObject
+SpatialLabel +-- AimSources
+class SpacialLabelDebugger {
+}
+enum InfoSections {
+    None= 0,
+    Name= 1 << 0,
+    Transform= 1 << 1,
+    Aim= 1 << 2,
+    Removal= 1 << 3,
+    Border= 1 << 4,
+    Anchor= 1 << 5,
+    LayerMask= 1 << 6,
+    All= ~0,
+}
+MonoBehaviour <|-- SpacialLabelDebugger
+SpacialLabelDebugger +-- InfoSections
+class SpatialLabelManager {
+    + RegisterLabel(label:SpatialLabel) : void
+    + UnregisterLabel(label:SpatialLabel) : void
+    + GetAllLabels() : List<SpatialLabel>
+}
+MonoBehaviour <|-- SpatialLabelManager
+SpatialLabelManager --> "Instance" SpatialLabelManager
+class SpatialAnchorFinder {
+    + NumUuidsPlayerPref : string = "numUuids"
+    + refreshOnEnable : bool = true
+    + periodicRefresh : bool = true
+    + refreshIntervalSeconds : float = 2f
+    + RefreshNow() : void
+    + Register(anchor:OVRSpatialAnchor) : void
+    + Unregister(anchor:OVRSpatialAnchor) : void
+    + GetGameObjectBySavedName(savedName:string) : GameObject
+    + TryGetSavedNameByUuid(uuid:Guid, name:string) : bool
+    + TryGetSavedUuidByName(savedName:string, uuid:Guid) : bool
+    + {static} TryParseUuidAndName(stored:string, uuid:Guid, name:string) : bool
+    + GetAnchorsBySpatialLabelName(labelName:string) : List<OVRSpatialAnchor>
+    + GetAnchorsBySpatialLabelNameFirstFound(labelName:string) : OVRSpatialAnchor
+    + MakeAnchorsPresenceAwareByLabelName(anchors:List<OVRSpatialAnchor>, b:bool) : void
+}
+class "List`1"<T> {
+}
+MonoBehaviour <|-- SpatialAnchorFinder
+SpatialAnchorFinder --> "Instance" SpatialAnchorFinder
+SpatialAnchorFinder o-> "trackedAnchors<OVRSpatialAnchor>" "List`1"
+class SpatialAnchorManager {
+    + <<const>> NumUuidsPlayerPref : string = "numUuids"
+    + enableDedup : bool = true
+    + dedupRadius : float = 1.20f
+    + normalAngleThresholdDeg : float = 30f
+    + LoadSavedAnchors() : void
+    + CreateSpatialAnchor() : void
+    + CreateSpatialAnchor(prefab:GameObject, position:Vector3, rotation:Quaternion, name:string) : void
+    + CreateSpatialAnchor(prefab:GameObject, position:Vector3, rotation:Quaternion, name:string, surfaceNormal:Vector3, labelRoot:GameObject) : OVRSpatialAnchor
+    + HideAnchor(anchor:OVRSpatialAnchor, b:bool) : void
+    + HideAllAnchors(b:bool) : void
+    + UnsaveAllAnchors() : void
+    + <<async>> UnsaveAnchor(anchor:OVRSpatialAnchor) : void
+    + <<async>> UnsaveAnchorAsync(anchor:OVRSpatialAnchor, destroyAnchorGO:bool) : Task<bool>
+    + TryGetNearbyByLabel(label:string, hitPoint:Vector3, hitNormal:Vector3, existing:OVRSpatialAnchor) : bool
+    + RegisterAnchor(anchor:OVRSpatialAnchor, label:string, normal:Vector3, labelGO:GameObject) : void
+    + LogAllPlayerPrefsAnchors() : void
+    + DeleteAnchorsInSceneOnly() : void
+    + RemoveUuidFromPlayerPrefs(anchor:OVRSpatialAnchor) : bool
+    + {static} RemoveUuidFromPlayerPrefs(uuid:Guid) : bool
+    + TryGetSavedName(uuid:Guid, name:string) : bool
+}
+class AnchorEntry {
+    + Label : string
+    + SeenCount : int = 1
+}
+MonoBehaviour <|-- SpatialAnchorManager
+SpatialAnchorManager --> "Instance" SpatialAnchorManager
+SpatialAnchorManager --> "anchorPrefab" OVRSpatialAnchor
+SpatialAnchorManager --> "anchorGOPrefabForLoading" GameObject
+SpatialAnchorManager --> "spatialAnchorCore" SpatialAnchorCoreBuildingBlock
+SpatialAnchorManager +-- AnchorEntry
+AnchorEntry --> "Anchor" OVRSpatialAnchor
+AnchorEntry --> "Normal" Vector3
+AnchorEntry --> "LabelGO" GameObject
+class TouchControllerEvent {
+}
+MonoBehaviour <|-- TouchControllerEvent
+TouchControllerEvent --> "OnControllerButtonPressed" UnityEvent
+class VoiceActionHandler {
+    + transcription : string
+    + OnMicStoppedListening() : void
+    + OnFinalTranscription(transcription:string) : void
+    + OnPartialTranscription(transcription:string) : void
+    + ActivateVoiceCommand() : void
+    + DeactivateVoiceCommand() : void
+    + HandleAction(stringArray:string[]) : void
+}
+class "List`1"<T> {
+}
+MonoBehaviour <|-- VoiceActionHandler
+VoiceActionHandler --> "appVoiceExperience" AppVoiceExperience
+VoiceActionHandler --> "transcriptionUIScript" TranscriptionUI
+VoiceActionHandler --> "florence2Controller" Florence2Controller
+VoiceActionHandler --> "UICommandThrown" TextFadeOut
+VoiceActionHandler --> "florenceSettingText" TMP_Text
+VoiceActionHandler --> "voicePromptWithFormat" TMP_Text
+VoiceActionHandler --> "voicePromptRoot" RectTransform
+VoiceActionHandler --> "voicePromptLayoutElement" LayoutElement
+VoiceActionHandler --> "currentAnchor" OVRSpatialAnchor
+VoiceActionHandler o-> "lastFoundAnchors<OVRSpatialAnchor>" "List`1"
+class XRInputManager {
+    + enableKeyboardFallback : bool = true
+    + enableQuickAnchor : bool = true
+    + useKeyboardNotSimulator : bool
+}
+MonoBehaviour <|-- XRInputManager
+XRInputManager --> "Instance" XRInputManager
+XRInputManager --> "leftRay" RayInteractor
+XRInputManager --> "rightRay" RayInteractor
+XRInputManager --> "leftMicrogestures" OVRMicrogestureEventSource
+XRInputManager --> "rightMicrogestures" OVRMicrogestureEventSource
+XRInputManager --> "florenceController" Florence2Controller
+XRInputManager --> "anchorManager" SpatialAnchorManager
+XRInputManager --> "TranscriptionUI" GameObject
+XRInputManager --> "textScript" MultiRequestTranscription
+XRInputManager --> "dictationActivation" DictationActivation
+XRInputManager --> "dictationExperience" AppDictationExperience
+XRInputManager --> "transcriptionUI" TranscriptionUI
+XRInputManager --> "voiceActionHandler" VoiceActionHandler
+XRInputManager --> "OnDetectRequested" UnityEvent
+XRInputManager --> "OnLoadAnchors" UnityEvent
+XRInputManager --> "OnClearAllAnchors" UnityEvent
+XRInputManager --> "OnQuickAnchor" UnityEvent
+XRInputManager --> "currentlySelectedAnchor" OVRSpatialAnchor
+class AddKeywordExample {
+    + AddKeyword(keyword:string) : IEnumerator
+    + TestStringToAdd : string
+    + AddKeywordTest() : void
+}
+class KeywordPayload {
+    + keyword : string
+}
+MonoBehaviour <|-- AddKeywordExample
+AddKeywordExample --> "Instance" AddKeywordExample
+AddKeywordExample +-- KeywordPayload
+class NoteManager {
+    + Start() : void
+    + AddNamesAndVoiceKeywords() : void
+    + CollectChildNames(parent:GameObject) : void
+}
+class "List`1"<T> {
+}
+MonoBehaviour <|-- NoteManager
+NoteManager --> "uploader" AddKeywordExample
+NoteManager o-> "uniqueNames<string>" "List`1"
+class VoiceManager {
+    + DeactivateVoiceCommand() : void
+}
+MonoBehaviour <|-- VoiceManager
+VoiceManager --> "Instance" VoiceManager
+VoiceManager --> "appVoice" AppVoiceExperience
+class WitKeywordsAdder {
+    + AddValuesBatch(items:KeywordItem[]) : IEnumerator
+    + AddEntityValue(id:string, value:string, synonyms:string[]) : IEnumerator
+}
+class KeywordItem {
+    + value : string
+    + KeywordItem(v:string, s:string[])
+}
+struct EntityValuePayload {
+    + value : string
+}
+MonoBehaviour <|-- WitKeywordsAdder
+WitKeywordsAdder +-- KeywordItem
+WitKeywordsAdder +-- EntityValuePayload
+class WitUtteranceTemplateUploader {
+    + apiVersion : string = "20240501"
+    + intentName : string = "addNoteToObject"
+    + actionEntity : string = "action"
+    + actionResolvedValue : string = "add note"
+    + objectEntity : string = "object"
+    + utteranceTemplate : string = "add note to {object&#125;"
+    + placeholderToken : string = "{object&#125;"
+    + useInspectorField : bool = true
+    + usePlayerPrefs : bool = true
+    + playerPrefsKey : string = "WIT_SERVER_TOKEN"
+    + useEnvironmentVar : bool = true
+    + envVarName : string = "WIT_SERVER_TOKEN"
+    + useTextAsset : bool = false
+    + useResources : bool = false
+    + resourcesPath : string = "wit_server_token"
+    + lowercaseObject : bool = false
+    + requireSpanMatches : bool = false
+    + useQueryParamAuth : bool = false
+    + debugAuth : bool = false
+    + UploadOne(objectValue:string) : void
+    + UploadMany(objectValues:IEnumerable<string>) : void
+    + SetServerToken(token:string) : void
+}
+class EntityAnnotation {
+    + entity : string
+    + start : int
+    + end : int
+    + value : string
+}
+class Utterance {
+    + text : string
+    + intent : string
+}
+class UtteranceArrayWrapper {
+}
+class "List`1"<T> {
+}
+MonoBehaviour <|-- WitUtteranceTemplateUploader
+WitUtteranceTemplateUploader --> "tokenTextAsset" TextAsset
+WitUtteranceTemplateUploader +-- EntityAnnotation
+WitUtteranceTemplateUploader +-- Utterance
+WitUtteranceTemplateUploader +-- UtteranceArrayWrapper
+UtteranceArrayWrapper --> "items<Utterance>" "List`1"
+@enduml

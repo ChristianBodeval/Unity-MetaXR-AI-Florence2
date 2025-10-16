@@ -1,0 +1,49 @@
+{
+    "_comment_layout": "Layout direction for PlantUML diagrams.",
+    "_options_layout": ["top_to_bottom", "left_to_right", "right_to_left", "bottom_to_top"],
+    "layout": "left_to_right",
+  
+    "_comment_visibility": "Controls whether listed classes should be shown or hidden by default.",
+    "_options_visibility": ["hidden", "visible"],
+    "defaultVisibility": "hidden",
+  
+    "_comment_generation": "Controls how UML files are generated.",
+    "_options_generation": {
+      "single": "Only modify include.puml",
+      "each_in_list": "Generate one file per class in hideList",
+      "each_in_folder": "Generate diagrams for all .puml files in the folder"
+    },
+    "generationMode": "single",
+  
+    "_comment_folders": "Specify where UML files are read and where rendered diagrams are stored.",
+    "folders": {
+      "umlInput": "Assets/Docs/UML",
+      "umlOutput": "Assets/Docs/UML/Generated"
+    },
+  
+    "_comment_hideList": "These Unity/system classes are hidden or shown depending on defaultVisibility.",
+    "hideList": [
+      "MonoBehaviour",
+      "ScriptableObject",
+      "GameObject",
+      "Transform",
+      "RectTransform",
+      "Camera",
+      "Material",
+      "Texture",
+      "Texture2D",
+      "Collider",
+      "MeshRenderer",
+      "RawImage",
+      "Image",
+      "TMP_Text",
+      "UnityEvent",
+      "Sprite",
+      "LayoutElement",
+      "Color",
+      "Vector3",
+      "List",
+      "List`1"
+    ]
+  }
+  

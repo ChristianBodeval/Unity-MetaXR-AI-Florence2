@@ -626,19 +626,6 @@ namespace PresentFutures.XRAI.Florence
             StartCoroutine(SpawnDetectionVisuals());
         }
 
-        private void DecodeAndDisplayOverlay(string base64Data)
-        {
-            if (string.IsNullOrEmpty(base64Data)) return;
-
-            var base64String = base64Data.Substring(base64Data.IndexOf(',') + 1);
-            byte[] imageBytes = Convert.FromBase64String(base64String);
-
-            _overlayTexture = new Texture2D(2, 2);
-            _overlayTexture.LoadImage(imageBytes);
-
-            resultImage.texture = _overlayTexture;
-        }
-
         public static Texture2D ConvertToTexture2D(Texture texture)
         {
             if (texture == null)
@@ -741,9 +728,9 @@ namespace PresentFutures.XRAI.Florence
                     if (txt) txt.text = ModifyString(det.Label);
 
 
-                    Debug.Log("spatialAnchorPrefab: " + spatialAnchorPrefab + " " + "det.Label: " + ModifyString(det.Label) + " " + "boxGO: " + boxGO);
                     SpatialAnchorManager.Instance.CreateSpatialAnchor(spatialAnchorPrefab, boxGO.transform.position, Quaternion.identity, ModifyString(det.Label));
 
+          
 
                     _spawnedBoxes.Add(boxGO);
                 }
@@ -953,5 +940,11 @@ namespace PresentFutures.XRAI.Florence
             }
             _spawnedAnchors.Clear();
         }
+       
+
     }
+
+
+
+
 }

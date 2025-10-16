@@ -11,9 +11,18 @@ namespace PresentFutures.XRAI.Spatial
     [RequireComponent(typeof(Collider))]
     public class SpatialLabel : MonoBehaviour
     {
-        // ─────────────────────────────────────────────────────────────────────
-        // MIK: Pointable events (Ray/Poke/Grab) via PointableUnityEventWrapper
-        // ─────────────────────────────────────────────────────────────────────
+        #region Types & Enums ─────────────────────────────────────────────────────────────
+        [System.Flags]
+        public enum AimSources
+        {
+            None = 0,
+            MainCamera = 1 << 0,
+            LeftController = 1 << 1,
+            RightController = 1 << 2
+        }
+        #endregion
+
+        #region Inspector: Pointable / Interaction ────────────────────────────────────────
         [Header("MIK: Pointable Events")]
         [Tooltip("If left empty, will auto-find a PointableUnityEventWrapper on this GameObject.")]
         [SerializeField] private PointableUnityEventWrapper pointableWrapper;
@@ -21,8 +30,6 @@ namespace PresentFutures.XRAI.Spatial
         [SerializeField, ReadOnly] private bool _isHovered;
         public bool isHovered => _isHovered;
 
-        // NOTE: You already had 'isSelected' — we keep it and keep visuals in sync.
-        // It is updated by the Interaction SDK select/unselect events.
         [Header("State")]
         public bool isHidden;
         [SerializeField, ReadOnly] public bool isSelected;
@@ -35,48 +42,9 @@ namespace PresentFutures.XRAI.Spatial
 
         public UnityEvent<bool> OnHoverChanged = new UnityEvent<bool>();
         public UnityEvent<bool> OnSelectedChanged = new UnityEvent<bool>();
+        #endregion
 
-        // ─────────────────────────────────────────────────────────────────────
-        // Existing fields
-        // ─────────────────────────────────────────────────────────────────────
-        [System.Flags]
-        public enum AimSources
-        {
-            None = 0,
-            MainCamera = 1 << 0,
-            LeftController = 1 << 1,
-            RightController = 1 << 2
-        }
-
-        public GameObject note;
-        public GameObject openNoteUI;
-
-        [Header("Aim & Remove")]
-        [Tooltip("Pick one or more sources to aim from.")]
-        [EnumFlags][SerializeField] private AimSources aimFrom = AimSources.MainCamera | AimSources.RightController;
-
-        [Tooltip("How far the player can target labels for removal.")]
-        [SerializeField] private float maxAimDistance = 10f;
-
-        [Tooltip("Layers that can be aimed at. Put your SpatialLabel objects on this layer (or 'Default').")]
-        [SerializeField] private LayerMask aimLayerMask = ~0;
-
-        [Tooltip("Draw a small gizmo when this label is being aimed at.")]
-        [SerializeField] private bool drawAimGizmo = true;
-        private bool _isAimedAt;
-
-        [ShowIf(nameof(NeedsLeftController))] private Transform leftController;
-        [ShowIf(nameof(NeedsRightController))] private Transform rightController;
-
-        [Header("Removal Input")]
-        [Tooltip("Removal button used for Left Controller aim.")]
-        [SerializeField] private OVRInput.Button removeButtonLeft = OVRInput.Button.Three;   // X by default
-        [Tooltip("Removal button used for Right Controller aim.")]
-        [SerializeField] private OVRInput.Button removeButtonRight = OVRInput.Button.Two;    // B by default
-        [Tooltip("Allow mouse left-click to remove while aiming (Editor).")]
-        [SerializeField] private bool allowMouseRemoveInEditor = true;
-        [SerializeField] private bool allowRemovingWithController = false;
-
+        #region Inspector: Label, Text & Visuals ─────────────────────────────────────────
         [Header("Label & Visuals")]
         [SerializeField] private string _objectName;
         [SerializeField] private TMP_Text text;
@@ -87,6 +55,35 @@ namespace PresentFutures.XRAI.Spatial
         public Material foundMaterial;
         public Material normalMaterial;
 
+        public GameObject note;
+        public GameObject openNoteUI;  // Kept (duplicate naming with OpenNoteUIGO below)
+
+        [SerializeField, ReadOnly] private bool _isNoteEnabled;
+        public bool isNoteEnabled
+        {
+            get => _isNoteEnabled;
+            set
+            {
+                _isNoteEnabled = value;
+                if (note) note.SetActive(_isNoteEnabled);
+            }
+        }
+
+        public string ObjectName
+        {
+            get => _objectName;
+            set
+            {
+                if (!string.IsNullOrEmpty(value))
+                {
+                    _objectName = value;
+                    if (text != null) text.text = _objectName;
+                }
+            }
+        }
+        #endregion
+
+        #region Inspector: Border Controls ────────────────────────────────────────────────
         [Header("Border")]
         public Transform borderTransform;
 
@@ -113,13 +110,33 @@ namespace PresentFutures.XRAI.Spatial
                     borderTransform.localScale = new Vector3(borderTransform.localScale.x, _yBorderValue, borderTransform.localScale.z);
             }
         }
+        #endregion
 
-        private static Camera _mainCam;
-        private SphereCollider _sphereCollider;
-        private OVRSpatialAnchor _anchor;
+        #region Inspector: Aiming & Removal ───────────────────────────────────────────────
+        [Header("Aim & Remove")]
+        [Tooltip("Pick one or more sources to aim from.")]
+        [EnumFlags][SerializeField] private AimSources aimFrom = AimSources.MainCamera | AimSources.RightController;
 
-        // Which source is currently hitting us this frame (for removal button mapping)
-        private AimSources _activeHitSource = AimSources.None;
+        [Tooltip("How far the player can target labels for removal.")]
+        [SerializeField] private float maxAimDistance = 10f;
+
+        [Tooltip("Layers that can be aimed at. Put your SpatialLabel objects on this layer (or 'Default').")]
+        [SerializeField] private LayerMask aimLayerMask = ~0;
+
+        [Tooltip("Draw a small gizmo when this label is being aimed at.")]
+        [SerializeField] private bool drawAimGizmo = true;
+
+        [ShowIf(nameof(NeedsLeftController))] private Transform leftController;
+        [ShowIf(nameof(NeedsRightController))] private Transform rightController;
+
+        [Header("Removal Input")]
+        [Tooltip("Removal button used for Left Controller aim.")]
+        [SerializeField] private OVRInput.Button removeButtonLeft = OVRInput.Button.Three; // X by default
+        [Tooltip("Removal button used for Right Controller aim.")]
+        [SerializeField] private OVRInput.Button removeButtonRight = OVRInput.Button.Two;   // B by default
+        [Tooltip("Allow mouse left-click to remove while aiming (Editor).")]
+        [SerializeField] private bool allowMouseRemoveInEditor = true;
+        [SerializeField] private bool allowRemovingWithController = false;
 
         [Header("Aiming Events")]
         [Tooltip("Invoked once when this label becomes aimed at.")]
@@ -128,6 +145,14 @@ namespace PresentFutures.XRAI.Spatial
         public UnityEvent OnNotAimedAt = new UnityEvent();
         [Tooltip("Invoked when click input occurs while aimed at (mouse in Editor / controller button).")]
         public UnityEvent OnClick = new UnityEvent();
+        #endregion
+
+        #region Backing Components & State ────────────────────────────────────────────────
+        private static Camera _mainCam;
+        private SphereCollider _sphereCollider;
+        private OVRSpatialAnchor _anchor;
+        private bool _isAimedAt;
+        private AimSources _activeHitSource = AimSources.None;
 
         public OVRSpatialAnchor Anchor
         {
@@ -138,34 +163,9 @@ namespace PresentFutures.XRAI.Spatial
             }
             set => _anchor = value;
         }
+        #endregion
 
-        public string ObjectName
-        {
-            get => _objectName;
-            set
-            {
-                if (!string.IsNullOrEmpty(value))
-                {
-                    _objectName = value;
-                    if (text != null) text.text = _objectName;
-                }
-            }
-        }
-
-        [SerializeField, ReadOnly] private bool _isNoteEnabled;
-        public bool isNoteEnabled
-        {
-            get => _isNoteEnabled;
-            set
-            {
-                _isNoteEnabled = value;
-                if (note) note.SetActive(_isNoteEnabled);
-            }
-        }
-
-        // ─────────────────────────────────────────────────────────────────────
-        // Unity lifecycle
-        // ─────────────────────────────────────────────────────────────────────
+        #region Unity Lifecycle ──────────────────────────────────────────────────────────
         private void Awake()
         {
             _anchor = GetComponent<OVRSpatialAnchor>();
@@ -210,8 +210,6 @@ namespace PresentFutures.XRAI.Spatial
             else
                 Debug.LogWarning("SpatialLabelManager instance not found!");
 
-
-
             if (SpatialAnchorManager.Instance != null && Anchor != null)
             {
                 if (SpatialAnchorManager.Instance.TryGetSavedName(Anchor.Uuid, out var savedName))
@@ -229,7 +227,7 @@ namespace PresentFutures.XRAI.Spatial
 
         private void Update()
         {
-            // --- Your existing "aim" logic (kept intact) ---
+            // Keep original aiming logic intact.
             bool wasAimedAt = _isAimedAt;
             _isAimedAt = false;
             _activeHitSource = AimSources.None;
@@ -253,8 +251,6 @@ namespace PresentFutures.XRAI.Spatial
                     OnClick?.Invoke();
                     if (allowRemovingWithController) Remove();
                 }
-
-                
             }
             else if (!hitSomething && hitSource == AimSources.RightController && XRInputManager.Instance != null)
             {
@@ -273,9 +269,14 @@ namespace PresentFutures.XRAI.Spatial
             }
         }
 
-        // ─────────────────────────────────────────────────────────────────────
-        // Pointable wrapper helpers
-        // ─────────────────────────────────────────────────────────────────────
+        private void OnDestroy()
+        {
+            if (SpatialAnchorManager.Instance != null && _anchor != null)
+                SpatialAnchorManager.Instance.UnsaveAnchor(_anchor);
+        }
+        #endregion
+
+        #region Pointable Wrapper Hooks ──────────────────────────────────────────────────
         private void EnsurePointableWrapper()
         {
             if (!pointableWrapper)
@@ -308,27 +309,14 @@ namespace PresentFutures.XRAI.Spatial
             pointableWrapper.WhenUnselect.RemoveListener(OnMIKUnselect);
         }
 
-        // MIK event handlers (PointerEvent carries interactor info if you need it later)
-        private void OnMIKHover(PointerEvent evt)
-        {
-            SetHovered(true);
-        }
+        // MIK event handlers (PointerEvent carries interactor info if needed later)
+        private void OnMIKHover(PointerEvent evt) => SetHovered(true);
+        private void OnMIKUnhover(PointerEvent evt) => SetHovered(false);
+        private void OnMIKSelect(PointerEvent evt) => SetSelected(true);
+        private void OnMIKUnselect(PointerEvent evt) => SetSelected(false);
+        #endregion
 
-        private void OnMIKUnhover(PointerEvent evt)
-        {
-            SetHovered(false);
-        }
-
-        private void OnMIKSelect(PointerEvent evt)
-        {
-            SetSelected(true);
-        }
-
-        private void OnMIKUnselect(PointerEvent evt)
-        {
-            SetSelected(false);
-        }
-
+        #region Hover/Select State Updates ───────────────────────────────────────────────
         private void SetHovered(bool value)
         {
             if (_isHovered == value) return;
@@ -338,13 +326,13 @@ namespace PresentFutures.XRAI.Spatial
             {
                 OnHoverEntered?.Invoke();
                 if (XRInputManager.Instance != null) XRInputManager.Instance.currentlySelectedAnchor = Anchor;
-                XRInputManager.Instance.currentlySelectedAnchor = this.Anchor;
+                XRInputManager.Instance.currentlySelectedAnchor = this.Anchor; // Original duplicate line kept
             }
             else
             {
                 if (XRInputManager.Instance != null) XRInputManager.Instance.currentlySelectedAnchor = null;
             }
-            OnHoverExited?.Invoke();
+            OnHoverExited?.Invoke(); // Kept as-is (invoked regardless, per original)
 
             OnHoverChanged?.Invoke(value);
         }
@@ -354,24 +342,21 @@ namespace PresentFutures.XRAI.Spatial
             if (isSelected == value) return;
             isSelected = value;
 
-            // Keep your visual toggle in sync
             if (selectedGO) selectedGO.SetActive(value);
 
             if (value)
             {
                 OnSelected?.Invoke();
-                
             }
             else OnUnselected?.Invoke();
 
             OnSelectedChanged?.Invoke(value);
         }
+        #endregion
 
-        // ─────────────────────────────────────────────────────────────────────
-        // Public controls / existing helpers
-        // ─────────────────────────────────────────────────────────────────────
+        #region Public Controls / Existing Helpers ───────────────────────────────────────
         bool isAimable;
-        public Collider aimPointerCollider;
+        public Collider aimPointerCollider; // Kept (note: also referenced earlier in comments)
 
         public void SetIsAimable(bool b)
         {
@@ -385,6 +370,31 @@ namespace PresentFutures.XRAI.Spatial
             if (selectedGO) selectedGO.SetActive(b);
         }
 
+        public void Remove()
+        {
+            if (SpatialAnchorManager.Instance != null && Anchor != null)
+                SpatialAnchorManager.Instance.UnsaveAnchor(Anchor);
+
+            Disable();
+            Invoke(nameof(MyDestoyer), 0.1f);
+        }
+
+        public void MyDestoyer() => Destroy(gameObject);
+
+        public void Disable()
+        {
+            foreach (Transform child in transform.GetComponentsInChildren<Transform>())
+                child.gameObject.SetActive(false);
+        }
+
+        public void Enable()
+        {
+            foreach (Transform child in transform.GetComponentsInChildren<Transform>())
+                child.gameObject.SetActive(true);
+        }
+        #endregion
+
+        #region Aiming Logic ─────────────────────────────────────────────────────────────
         private bool TryGetBestHit(out RaycastHit bestHit, out AimSources hitSource)
         {
             bestHit = default;
@@ -444,50 +454,17 @@ namespace PresentFutures.XRAI.Spatial
             if (source == AimSources.RightController) return removeButtonRight;
             return removeButtonRight;
         }
+        #endregion
 
-        public void Remove()
-        {
-            if (SpatialAnchorManager.Instance != null && Anchor != null)
-                SpatialAnchorManager.Instance.UnsaveAnchor(Anchor);
-
-            Disable();
-            Invoke(nameof(MyDestoyer), 0.1f);
-        }
-
-        public void MyDestoyer() => Destroy(gameObject);
-
-        public void Disable()
-        {
-            foreach (Transform child in transform.GetComponentsInChildren<Transform>())
-                child.gameObject.SetActive(false);
-        }
-
-        public void Enable()
-        {
-            foreach (Transform child in transform.GetComponentsInChildren<Transform>())
-                child.gameObject.SetActive(true);
-        }
-
-        private void OnDestroy()
-        {
-            if (SpatialAnchorManager.Instance != null && _anchor != null)
-                SpatialAnchorManager.Instance.UnsaveAnchor(_anchor);
-        }
-
-        private void OnDrawGizmos()
-        {
-            if (!drawAimGizmo || !_isAimedAt) return;
-            Gizmos.matrix = transform.localToWorldMatrix;
-            Gizmos.DrawWireSphere(Vector3.zero, 0.08f);
-        }
-
+        #region Notes & Presence ─────────────────────────────────────────────────────────
         [Button]
         public void NoteEnableTester()
         {
             NoteEnable(!isNoteEnabled);
         }
 
-        public GameObject OpenNoteUIGO;
+        public GameObject OpenNoteUIGO; // Kept (duplicate naming with openNoteUI above)
+
         public void NoteEnable(bool b)
         {
             if (OpenNoteUIGO) OpenNoteUIGO.SetActive(b);
@@ -496,7 +473,6 @@ namespace PresentFutures.XRAI.Spatial
             if (note) note.SetActive(b);
         }
 
-        // -------- Selection / Visibility --------
         public void Hide(bool b)
         {
             isHidden = b;
@@ -521,8 +497,18 @@ namespace PresentFutures.XRAI.Spatial
         }
 
         [Button] public void Tester() => MakePressenceAware(true);
+        #endregion
 
-        // -------- Helpers --------
+        #region Gizmos ───────────────────────────────────────────────────────────────────
+        private void OnDrawGizmos()
+        {
+            if (!drawAimGizmo || !_isAimedAt) return;
+            Gizmos.matrix = transform.localToWorldMatrix;
+            Gizmos.DrawWireSphere(Vector3.zero, 0.08f);
+        }
+        #endregion
+
+        #region Controller Resolution Helpers ────────────────────────────────────────────
         private void TryAutoFindControllers()
         {
             if (!leftController)
@@ -555,8 +541,9 @@ namespace PresentFutures.XRAI.Spatial
             return null;
         }
 
-        // ----- NaughtyAttributes conditions -----
+        // NaughtyAttributes conditions
         private bool NeedsLeftController() => HasFlag(aimFrom, AimSources.LeftController);
         private bool NeedsRightController() => HasFlag(aimFrom, AimSources.RightController);
+        #endregion
     }
 }

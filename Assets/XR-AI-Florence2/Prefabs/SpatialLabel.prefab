@@ -2022,8 +2022,18 @@ MonoBehaviour:
   OnSelectedChanged:
     m_PersistentCalls:
       m_Calls: []
+  _objectName: Test
+  text: {fileID: 835906682078033286}
+  selectedGO: {fileID: 2276552684608198967}
+  meshRenderer: {fileID: 3361284552148577036}
+  foundMaterial: {fileID: 2100000, guid: cc1de0e42a52de6448f0f8de158fbed8, type: 2}
+  normalMaterial: {fileID: 2100000, guid: 0c0540537096ec54db2ccce88e295b04, type: 2}
   note: {fileID: 3768086149783864576}
   openNoteUI: {fileID: 7476418475660224376}
+  _isNoteEnabled: 0
+  borderTransform: {fileID: 6164931802874444827}
+  _xBorderValue: 1
+  _yBorderValue: 1
   aimFrom: 6
   maxAimDistance: 1e+9
   aimLayerMask:
@@ -2034,15 +2044,6 @@ MonoBehaviour:
   removeButtonRight: 2
   allowMouseRemoveInEditor: 0
   allowRemovingWithController: 0
-  _objectName: Test
-  text: {fileID: 835906682078033286}
-  selectedGO: {fileID: 2276552684608198967}
-  meshRenderer: {fileID: 3361284552148577036}
-  foundMaterial: {fileID: 2100000, guid: cc1de0e42a52de6448f0f8de158fbed8, type: 2}
-  normalMaterial: {fileID: 2100000, guid: 0c0540537096ec54db2ccce88e295b04, type: 2}
-  borderTransform: {fileID: 6164931802874444827}
-  _xBorderValue: 1
-  _yBorderValue: 1
   OnAimedAt:
     m_PersistentCalls:
       m_Calls:
@@ -2088,7 +2089,6 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
-  _isNoteEnabled: 0
   aimPointerCollider: {fileID: 5151019102288131048}
   OpenNoteUIGO: {fileID: 7476418475660224376}
 --- !u!114 &-3678513331660394245

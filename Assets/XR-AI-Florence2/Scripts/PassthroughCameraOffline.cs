@@ -21,7 +21,7 @@ namespace PassthroughCameraSamples
         {
             public PassthroughCameraEye Eye;
             public Pose CameraPoseWorld;                 // World pose when the frame was captured
-            public PassthroughCameraIntrinsics Intrinsics;
+            public PassthroughCameraIntrinsicsStruct Intrinsics;
             public Vector2Int Resolution;                // Intrinsics.Resolution for convenience
             public long TimestampNs;                     // Optional: your own timestamp
             public Texture2D FrameRGBA;                  // Optional: saved frame you rendered/copied
@@ -52,7 +52,7 @@ namespace PassthroughCameraSamples
         /// <summary>
         /// Create a snapshot from values you already saved elsewhere (e.g., you stored a Pose + intrinsics earlier).
         /// </summary>
-        public static SavedSnapshot FromSaved(PassthroughCameraEye eye, Pose cameraPoseWorld, PassthroughCameraIntrinsics intrinsics, Texture2D savedFrame = null, long timestampNs = 0)
+        public static SavedSnapshot FromSaved(PassthroughCameraEye eye, Pose cameraPoseWorld, PassthroughCameraIntrinsicsStruct intrinsics, Texture2D savedFrame = null, long timestampNs = 0)
         {
             return new SavedSnapshot
             {
@@ -67,9 +67,9 @@ namespace PassthroughCameraSamples
 
         /// <summary>
         /// Compute a ray in *camera space* using saved intrinsics and a pixel coordinate in that saved frame.
-        /// The pixel must be in the *intrinsics’ resolution space* (usually intrinsics.Resolution).
+        /// The pixel must be in the *intrinsicsï¿½ resolution space* (usually intrinsics.Resolution).
         /// </summary>
-        public static Ray ScreenPointToRayInCamera(in PassthroughCameraIntrinsics intrinsics, Vector2Int pixel)
+        public static Ray ScreenPointToRayInCamera(in PassthroughCameraIntrinsicsStruct intrinsics, Vector2Int pixel)
         {
             // Matches the logic in PassthroughCameraUtils.ScreenPointToRayInCamera
             var dirCam = new Vector3
@@ -86,7 +86,7 @@ namespace PassthroughCameraSamples
         /// Same as above but with normalized UV in [0..1], automatically scaled to the saved resolution.
         /// Handy when your detector returns normalized coords.
         /// </summary>
-        public static Ray NormalizedToRayInCamera(in PassthroughCameraIntrinsics intrinsics, Vector2 uv01)
+        public static Ray NormalizedToRayInCamera(in PassthroughCameraIntrinsicsStruct intrinsics, Vector2 uv01)
         {
             var px = Mathf.Clamp01(uv01.x) * (intrinsics.Resolution.x - 1);
             var py = Mathf.Clamp01(uv01.y) * (intrinsics.Resolution.y - 1);

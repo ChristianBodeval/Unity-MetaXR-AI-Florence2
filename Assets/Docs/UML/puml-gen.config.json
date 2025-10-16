@@ -1,0 +1,38 @@
+{
+  "inputDirs": [
+    "Assets/XR-AI-Florence2/Scripts"
+  ],
+  "outputDir": "Assets/Docs/UML",
+
+  "dir": true,
+  "allInOne": true,
+  "createAssociation": true,
+  "public": true,
+  "deduplicate": true,
+
+  "excludeDirs": [
+    "Assets/Oculus",
+    "Assets/Plugins",
+    "Assets/MetaXR",
+    "Assets/Samples",
+    "Assets/ThirdParty",
+    "Assets/Tests"
+  ],
+
+  "excludeTypes": [
+    "UnityEngine.MonoBehaviour",
+    "UnityEngine.ScriptableObject",
+    "UnityEngine.GameObject",
+    "UnityEngine.Transform",
+    "UnityEngine.RectTransform",
+    "UnityEngine.Sprite",
+    "UnityEngine.Material",
+    "UnityEngine.Camera",
+    "UnityEngine.Collider",
+    "UnityEngine.Texture2D",
+    "UnityEngine.MeshRenderer",
+    "UnityEngine.UI.*",
+    "TMPro.*",
+    "UnityEngine.Events.UnityEvent"
+  ]
+}

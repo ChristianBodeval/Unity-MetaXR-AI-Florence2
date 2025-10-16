@@ -176,7 +176,7 @@ public class ControllerUI : MonoBehaviour
                 if (rightController) rightController.SetActive(true);
             }
         }
-        else
+        else if(leftController != null && rightController != null)
         {
 
             leftController.transform.localPosition = new Vector3(-distanceBetweenControllers, 0, 0);
