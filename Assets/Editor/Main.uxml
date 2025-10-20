@@ -1,0 +1,5 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+  <ui:VisualElement class="root">
+    <ui:Button name="MyButton" text="Click me" class="primary"/>
+  </ui:VisualElement>
+</ui:UXML>

@@ -1,0 +1,9 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="False">
+    <Style src="project://database/Assets/CircularSlider.uss?fileID=7433441132597879392&amp;guid=14e88594efb606042b58297862dc0b29&amp;type=3#CircularSlider" />
+    <VisualElement class="circular-slider">
+        <VisualElement class="circle-bg" />
+        <VisualElement class="circle-fill" />
+        <VisualElement class="handle" />
+    </VisualElement>
+    <ui:VisualElement style="flex-grow: 1;" />
+</ui:UXML>

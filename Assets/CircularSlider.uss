@@ -1,0 +1,27 @@
+.volume-container {
+    width: 200px;
+    height: 200px;
+    align-items: center;
+    justify-content: center;
+    display: flex;
+    position: relative;
+    background-color: #222;
+    border-radius: 100px;
+}
+
+.circle-fill {
+    width: 200px;
+    height: 200px;
+    background-image: radial-gradient(circle at center, #f4080b 60%, transparent 61%);
+    -unity-background-scale-mode: stretch-to-fill;
+    border-radius: 100px;
+    transform-origin: center;
+    transform: rotate(0deg);
+}
+
+.value-label {
+    position: absolute;
+    color: white;
+    font-size: 24px;
+    unity-text-align: middle-center;
+}

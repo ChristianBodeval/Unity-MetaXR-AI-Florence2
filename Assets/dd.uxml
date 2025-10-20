@@ -1,0 +1,8 @@
+<ui:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ui="UnityEngine.UIElements" noNamespaceSchemaLocation="../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <Style src="project://database/Assets/newSS.uss?fileID=7433441132597879392&amp;guid=985c08c426959044e89067a1ea33fef7&amp;type=3#newSS" />
+    <ui:VisualElement name="CircularSlider" class="circular-slider">
+        <ui:VisualElement name="FillRing" class="fill-ring" />
+        <ui:VisualElement name="BackgroundRing" class="background-ring" />
+        <ui:VisualElement name="CenterIcon" class="center-icon" />
+    </ui:VisualElement>
+</ui:UXML>
