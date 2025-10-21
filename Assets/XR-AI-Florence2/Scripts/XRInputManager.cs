@@ -9,11 +9,9 @@ using PresentFutures.XRAI.Florence;
 using Oculus.Interaction;
 using PresentFutures.XRAI.Spatial;
 
-
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
-// Place in any namespace you prefer
 
 public class XRInputManager : MonoBehaviour
 {
@@ -48,6 +46,13 @@ public class XRInputManager : MonoBehaviour
     public UnityEvent OnClearAllAnchors;     // Fired when we clear/unsave all
     public UnityEvent OnQuickAnchor;         // Fired when we create a quick test anchor
 
+    // NEW: Directional events (any hand)
+    [Header("Directional Events (any hand)")]
+    public UnityEvent OnUp;
+    public UnityEvent OnDown;
+    public UnityEvent OnLeft;
+    public UnityEvent OnRight;
+
     [Header("RunTime values")]
     public OVRSpatialAnchor currentlySelectedAnchor;
 
@@ -68,8 +73,22 @@ public class XRInputManager : MonoBehaviour
     private int _rightThumbTapCount = 0;
 
     // Keep delegates so we can properly unsubscribe
-    private UnityEngine.Events.UnityAction<OVRHand.MicrogestureType> _leftGestureHandler;
-    private UnityEngine.Events.UnityAction<OVRHand.MicrogestureType> _rightGestureHandler;
+    private UnityAction<OVRHand.MicrogestureType> _leftGestureHandler;
+    private UnityAction<OVRHand.MicrogestureType> _rightGestureHandler;
+
+    // ─────────────────────────────────────────────────────────────────────
+    // Thumbstick-to-DPad (either controller)
+    // ─────────────────────────────────────────────────────────────────────
+    [Header("Thumbstick D-Pad Settings")]
+    [Tooltip("Enable to treat thumbstick tilts as Up/Down/Left/Right on either controller.")]
+    public bool enableThumbstickDirectional = true;
+
+    [Range(0.2f, 0.95f)]
+    [Tooltip("Deadzone threshold magnitude required to register a direction.")]
+    public float thumbstickThreshold = 0.6f;
+
+    // Debounce flags so each tilt fires once until released/changed
+    private bool _stickUpActive, _stickDownActive, _stickLeftActive, _stickRightActive;
 
     void Awake()
     {
@@ -83,36 +102,31 @@ public class XRInputManager : MonoBehaviour
         Invoke("LoadAll", 2);
 
         // Hook up microgesture listeners (if provided in inspector)
-        if (enableThumbTapDoubleTap)
+        if (leftMicrogestures != null)
         {
-            if (leftMicrogestures != null)
-            {
-                _leftGestureHandler = g => OnGestureRecognized(OVRPlugin.Hand.HandLeft, g);
-                leftMicrogestures.GestureRecognizedEvent.AddListener(_leftGestureHandler);
-            }
-            if (rightMicrogestures != null)
-            {
-                _rightGestureHandler = g => OnGestureRecognized(OVRPlugin.Hand.HandRight, g);
-                rightMicrogestures.GestureRecognizedEvent.AddListener(_rightGestureHandler);
-            }
+            _leftGestureHandler = g => OnGestureRecognized(OVRPlugin.Hand.HandLeft, g);
+            leftMicrogestures.GestureRecognizedEvent.AddListener(_leftGestureHandler);
+        }
+        if (rightMicrogestures != null)
+        {
+            _rightGestureHandler = g => OnGestureRecognized(OVRPlugin.Hand.HandRight, g);
+            rightMicrogestures.GestureRecognizedEvent.AddListener(_rightGestureHandler);
         }
     }
 
     private void OnDestroy()
     {
         // Clean up listeners if we added them
-        if (enableThumbTapDoubleTap)
-        {
-            if (leftMicrogestures != null && _leftGestureHandler != null)
-                leftMicrogestures.GestureRecognizedEvent.RemoveListener(_leftGestureHandler);
-            if (rightMicrogestures != null && _rightGestureHandler != null)
-                rightMicrogestures.GestureRecognizedEvent.RemoveListener(_rightGestureHandler);
-        }
+        if (leftMicrogestures != null && _leftGestureHandler != null)
+            leftMicrogestures.GestureRecognizedEvent.RemoveListener(_leftGestureHandler);
+        if (rightMicrogestures != null && _rightGestureHandler != null)
+            rightMicrogestures.GestureRecognizedEvent.RemoveListener(_rightGestureHandler);
     }
 
     void Update()
     {
         PollOVRInputs();
+        if (enableThumbstickDirectional) PollThumbsticksAsDpad();
         if (enableKeyboardFallback) PollKeyboardFallbacks();
     }
 
@@ -140,10 +154,28 @@ public class XRInputManager : MonoBehaviour
 #endif
 
     // ─────────────────────────────────────────────────────────────────────
-    // Microgesture callback → detect ThumbTap double-tap
+    // Microgesture callback (both hands) → directional + double-tap
     // ─────────────────────────────────────────────────────────────────────
     private void OnGestureRecognized(OVRPlugin.Hand hand, OVRHand.MicrogestureType gesture)
     {
+        // Directional swipes fire events regardless of hand
+        switch (gesture)
+        {
+            case OVRHand.MicrogestureType.SwipeForward:
+                OnUp?.Invoke();
+                return;
+            case OVRHand.MicrogestureType.SwipeBackward:
+                OnDown?.Invoke();
+                return;
+            case OVRHand.MicrogestureType.SwipeLeft:
+                OnLeft?.Invoke();
+                return;
+            case OVRHand.MicrogestureType.SwipeRight:
+                OnRight?.Invoke();
+                return;
+        }
+
+        // ThumbTap double-tap -> ActivateVoiceCommand (existing behavior)
         if (!enableThumbTapDoubleTap) return;
         if (gesture != OVRHand.MicrogestureType.ThumbTap) return;
 
@@ -151,16 +183,15 @@ public class XRInputManager : MonoBehaviour
 
         if (hand == OVRPlugin.Hand.HandLeft)
         {
-            // within window => increment; else reset
             if (now - _lastLeftThumbTapTime <= thumbTapDoubleWindow) _leftThumbTapCount++;
             else _leftThumbTapCount = 1;
 
             _lastLeftThumbTapTime = now;
-            if(currentlySelectedAnchor != null) currentlySelectedAnchor.GetComponent<SpatialLabel>().OnClick.Invoke();
+            if (currentlySelectedAnchor != null) currentlySelectedAnchor.GetComponent<SpatialLabel>()?.OnClick?.Invoke();
 
             if (_leftThumbTapCount >= 2)
             {
-                _leftThumbTapCount = 0; // reset to avoid triple counting
+                _leftThumbTapCount = 0;
                 ActivateVoiceCommand();
             }
         }
@@ -170,8 +201,7 @@ public class XRInputManager : MonoBehaviour
             else _rightThumbTapCount = 1;
 
             _lastRightThumbTapTime = now;
-            if(currentlySelectedAnchor != null) currentlySelectedAnchor.GetComponent<SpatialLabel>().OnClick.Invoke();
-
+            if (currentlySelectedAnchor != null) currentlySelectedAnchor.GetComponent<SpatialLabel>()?.OnClick?.Invoke();
 
             if (_rightThumbTapCount >= 2)
             {
@@ -183,13 +213,6 @@ public class XRInputManager : MonoBehaviour
 
     private void PollOVRInputs()
     {
-        // A (Right) => Detect
-        //if (OVRInput.GetDown(OVRInput.Button.One, OVRInput.Controller.RTouch))
-        //    Detect();
-
-        //if (OVRInput.GetDown(OVRInput.Button.Two, OVRInput.Controller.LTouch))
-        //    ActivateVoiceCommand();
-
         // Right Grip => Clear/Unsave All
         if (OVRInput.GetDown(OVRInput.Button.PrimaryHandTrigger, OVRInput.Controller.RTouch))
             ClearAll();
@@ -201,6 +224,33 @@ public class XRInputManager : MonoBehaviour
         // Optional: Quick Anchor on Right Index Trigger
         if (enableQuickAnchor && OVRInput.GetDown(OVRInput.Button.PrimaryIndexTrigger, OVRInput.Controller.RTouch))
             QuickAnchorAtRightController();
+    }
+
+    // Treat either thumbstick as a 4-way D-pad, debounced
+    private void PollThumbsticksAsDpad()
+    {
+        Vector2 left = OVRInput.Get(OVRInput.Axis2D.PrimaryThumbstick, OVRInput.Controller.LTouch);
+        Vector2 right = OVRInput.Get(OVRInput.Axis2D.PrimaryThumbstick, OVRInput.Controller.RTouch);
+
+        // Merge: whichever has the larger magnitude wins
+        Vector2 v = left.sqrMagnitude >= right.sqrMagnitude ? left : right;
+
+        bool up = v.y >= thumbstickThreshold && Mathf.Abs(v.y) >= Mathf.Abs(v.x);
+        bool down = v.y <= -thumbstickThreshold && Mathf.Abs(v.y) >= Mathf.Abs(v.x);
+        bool rightD = v.x >= thumbstickThreshold && Mathf.Abs(v.x) > Mathf.Abs(v.y);
+        bool leftD = v.x <= -thumbstickThreshold && Mathf.Abs(v.x) > Mathf.Abs(v.y);
+
+        // Rising edges
+        if (up && !_stickUpActive) { _stickUpActive = true; OnUp?.Invoke(); }
+        if (down && !_stickDownActive) { _stickDownActive = true; OnDown?.Invoke(); }
+        if (leftD && !_stickLeftActive) { _stickLeftActive = true; OnLeft?.Invoke(); }
+        if (rightD && !_stickRightActive) { _stickRightActive = true; OnRight?.Invoke(); }
+
+        // Reset when released or direction changes
+        if (!up) _stickUpActive = false;
+        if (!down) _stickDownActive = false;
+        if (!leftD) _stickLeftActive = false;
+        if (!rightD) _stickRightActive = false;
     }
 
     private void ActivateVoiceCommand()
@@ -217,23 +267,28 @@ public class XRInputManager : MonoBehaviour
 
     private void PollKeyboardFallbacks()
     {
-        if (useKeyboardNotSimulator)
-        {
-            // A => Detect
-            if (Input.GetKeyDown(KeyCode.A)) Detect();
+        if (!useKeyboardNotSimulator) return;
 
-            // C => Clear/Unsave All
-            if (Input.GetKeyDown(KeyCode.C)) ClearAll();
+        // A => Detect
+        if (Input.GetKeyDown(KeyCode.A)) Detect();
 
-            // L => Load
-            if (Input.GetKeyDown(KeyCode.L)) LoadAll();
+        // C => Clear/Unsave All
+        if (Input.GetKeyDown(KeyCode.C)) ClearAll();
 
-            // N => Quick Anchor
-            if (enableQuickAnchor && Input.GetKeyDown(KeyCode.N)) QuickAnchorAtRightController();
+        // L => Load
+        if (Input.GetKeyDown(KeyCode.L)) LoadAll();
 
-            if (Input.GetKeyDown(KeyCode.K) && anchorManager)
-                anchorManager.DeleteAnchorsInSceneOnly();
-        }
+        // N => Quick Anchor
+        if (enableQuickAnchor && Input.GetKeyDown(KeyCode.N)) QuickAnchorAtRightController();
+
+        if (Input.GetKeyDown(KeyCode.K) && anchorManager)
+            anchorManager.DeleteAnchorsInSceneOnly();
+
+        // Directional testing (either arrows or WASD)
+        if (Input.GetKeyDown(KeyCode.UpArrow) || Input.GetKeyDown(KeyCode.W)) OnUp?.Invoke();
+        if (Input.GetKeyDown(KeyCode.DownArrow) || Input.GetKeyDown(KeyCode.S)) OnDown?.Invoke();
+        if (Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.A)) OnLeft?.Invoke();
+        if (Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.D)) OnRight?.Invoke();
     }
 
     // ---- Actions -------------------------------------------------------------
